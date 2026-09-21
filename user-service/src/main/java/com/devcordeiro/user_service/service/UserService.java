@@ -2,11 +2,10 @@ package com.devcordeiro.user_service.service;
 
 import com.devcordeiro.user_service.dto.UserDto;
 import com.devcordeiro.user_service.entity.User;
+import com.devcordeiro.user_service.exception.UserNotFoundException;
 import com.devcordeiro.user_service.repository.UserRespository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -33,12 +32,12 @@ public class UserService {
     public UserDto getUserById(Long id) {
         return userRespository.findById(id)
                 .map(this::toDto)
-                .orElse(null);
+                .orElseThrow(() -> new UserNotFoundException("User not found with id " + id));
     }
 
     public void updateUser(Long id, UserDto dto) {
         User user = userRespository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found with id " + id));
 
         user.setName(dto.getName());
         user.setEmail(dto.getEmail());
@@ -51,7 +50,7 @@ public class UserService {
 
     public void deleteUser(Long id) {
         User user = userRespository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found with id " + id));
         userRespository.delete(user);
     }
 
