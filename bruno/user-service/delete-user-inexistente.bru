@@ -12,11 +12,16 @@ delete {
 
 docs {
   Rodar logo apos "Delete user" com o mesmo id tambem serve: a segunda remocao
-  ja nao encontra o registro. O controller devolve 404 com corpo vazio.
+  ja nao encontra o registro. A resposta e o mesmo ProblemDetail de 404.
 }
 
 tests {
   test("responde 404 Not Found", function() {
     expect(res.getStatus()).to.equal(404);
+  });
+
+  test("traz o problem detail do usuario ausente", function() {
+    expect(res.body.title).to.equal("User not found");
+    expect(res.body.detail).to.equal("User not found with id 999999999");
   });
 }

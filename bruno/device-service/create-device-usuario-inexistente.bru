@@ -1,0 +1,48 @@
+meta {
+  name: Create device - usuario inexistente
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{deviceBaseUrl}}/api/v1/device
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Camera do portao",
+    "type": "CAMERA",
+    "location": "Entrada",
+    "userId": 999999999
+  }
+}
+
+docs {
+  A constraint fk_device_user barra o insert. O RestExceptionHandler traduz o
+  DataIntegrityViolationException para 409 com um ProblemDetail.
+
+  A mensagem original do banco (nome da constraint e SQL) fica so no log, em
+  nivel WARN - a resposta traz um detail generico.
+}
+
+tests {
+  test("responde 409 Conflict", function() {
+    expect(res.getStatus()).to.equal(409);
+  });
+
+  test("traz o problem detail do conflito", function() {
+    expect(res.body.type).to.equal("https://energy-tracker.devcordeiro.com/problems/device-conflict");
+    expect(res.body.title).to.equal("Device conflicts with existing data");
+    expect(res.body.detail).to.include("userId");
+  });
+
+  test("nao vaza detalhe do banco", function() {
+    expect(JSON.stringify(res.getBody())).to.not.include("fk_device_user");
+  });
+}

@@ -22,8 +22,8 @@ body:json {
 }
 
 docs {
-  O service lanca IllegalArgumentException e o controller traduz para 404 com o
-  texto "User not found".
+  Mesmo ProblemDetail do GET - o controller nao trata mais a excecao, quem
+  responde e o RestExceptionHandler.
 }
 
 tests {
@@ -31,7 +31,9 @@ tests {
     expect(res.getStatus()).to.equal(404);
   });
 
-  test("explica o motivo", function() {
-    expect(String(res.getBody())).to.equal("User not found");
+  test("traz o problem detail do usuario ausente", function() {
+    expect(res.body.title).to.equal("User not found");
+    expect(res.body.detail).to.equal("User not found with id 999999999");
+    expect(res.body.instance).to.equal("/api/v1/user/999999999");
   });
 }

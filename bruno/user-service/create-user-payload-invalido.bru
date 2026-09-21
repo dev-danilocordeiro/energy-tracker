@@ -22,13 +22,21 @@ body:json {
 }
 
 docs {
-  Sem name e sem email. As colunas sao NOT NULL no banco, entao a insercao falha.
-  Ainda nao existe bean validation no UserDto, por isso a resposta vem como 500 e
-  nao como 400. Quando a validacao na borda entrar, troque o teste para 400.
+  Sem name e sem email. As colunas sao NOT NULL no banco, entao a insercao falha
+  e cai no mesmo handler de DataIntegrityViolationException - por isso a resposta
+  e 409, e nao 400.
+
+  409 aqui e impreciso: o pedido esta malformado, nao em conflito com outro
+  registro. Falta bean validation no UserDto para barrar isso na borda e devolver
+  400 antes de tocar o banco. Quando a validacao entrar, troque o teste para 400.
 }
 
 tests {
   test("rejeita o cadastro", function() {
-    expect(res.getStatus()).to.be.at.least(400);
+    expect(res.getStatus()).to.equal(409);
+  });
+
+  test("responde no formato problem+json", function() {
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
   });
 }

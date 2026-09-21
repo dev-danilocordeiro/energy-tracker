@@ -1,0 +1,47 @@
+meta {
+  name: Create device - type invalido
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{deviceBaseUrl}}/api/v1/device
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Geladeira",
+    "type": "FRIDGE",
+    "location": "Cozinha",
+    "userId": {{userId}}
+  }
+}
+
+docs {
+  FRIDGE nao existe no enum DeviceType. O Jackson falha na desserializacao antes
+  de chegar ao controller.
+
+  Quem responde aqui e o proprio Spring, nao o RestExceptionHandler - mas como
+  spring.mvc.problemdetails.enabled esta ligado, o corpo tambem sai como
+  problem+json. Por ser um erro generico do framework, ele nao traz type
+  customizado nem timestamp.
+}
+
+tests {
+  test("responde 400 Bad Request", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("responde no formato problem+json", function() {
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+    expect(res.body.status).to.equal(400);
+    expect(res.body.title).to.equal("Bad Request");
+    expect(res.body.instance).to.equal("/api/v1/device");
+  });
+}

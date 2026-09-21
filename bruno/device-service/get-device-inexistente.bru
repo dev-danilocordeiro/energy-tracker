@@ -1,17 +1,17 @@
 meta {
-  name: Get user by id - inexistente
+  name: Get device by id - inexistente
   type: http
   seq: 6
 }
 
 get {
-  url: {{baseUrl}}/api/v1/user/999999999
+  url: {{deviceBaseUrl}}/api/v1/device/999999999
   body: none
   auth: none
 }
 
 docs {
-  O service lanca UserNotFoundException e o RestExceptionHandler responde um
+  O service lanca DeviceNotFoundException e o RestExceptionHandler responde um
   ProblemDetail (RFC 7807), com Content-Type application/problem+json.
 }
 
@@ -25,11 +25,11 @@ tests {
   });
 
   test("traz o problem detail completo", function() {
-    expect(res.body.type).to.equal("https://energy-tracker.devcordeiro.com/problems/user-not-found");
-    expect(res.body.title).to.equal("User not found");
+    expect(res.body.type).to.equal("https://energy-tracker.devcordeiro.com/problems/device-not-found");
+    expect(res.body.title).to.equal("Device not found");
     expect(res.body.status).to.equal(404);
-    expect(res.body.detail).to.equal("User not found with id 999999999");
-    expect(res.body.instance).to.equal("/api/v1/user/999999999");
+    expect(res.body.detail).to.equal("Device not found with id 999999999");
+    expect(res.body.instance).to.equal("/api/v1/device/999999999");
     expect(res.body.timestamp).to.be.a("string");
   });
 }

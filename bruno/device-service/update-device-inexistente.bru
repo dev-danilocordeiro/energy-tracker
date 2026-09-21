@@ -1,0 +1,40 @@
+meta {
+  name: Update device - inexistente
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{deviceBaseUrl}}/api/v1/device/999999999
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Nenhum",
+    "type": "LIGHT",
+    "location": "Lugar nenhum"
+  }
+}
+
+docs {
+  Mesmo ProblemDetail do GET - o controller nao trata mais a excecao, quem
+  responde e o RestExceptionHandler.
+}
+
+tests {
+  test("responde 404 Not Found", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+
+  test("traz o problem detail do dispositivo ausente", function() {
+    expect(res.body.title).to.equal("Device not found");
+    expect(res.body.detail).to.equal("Device not found with id 999999999");
+    expect(res.body.instance).to.equal("/api/v1/device/999999999");
+  });
+}
