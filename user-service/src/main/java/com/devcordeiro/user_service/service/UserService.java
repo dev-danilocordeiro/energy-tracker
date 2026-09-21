@@ -18,7 +18,6 @@ public class UserService {
         this.userRespository = userRespository;
     }
     public UserDto createUser(UserDto input) {
-        log.info("Creating user: {}",  input);
         final User createdUser = User.builder()
                 .name(input.getName())
                 .email(input.getEmail())
@@ -32,14 +31,12 @@ public class UserService {
     }
 
     public UserDto getUserById(Long id) {
-        log.info("Retrieving user by id: {}", id);
         return userRespository.findById(id)
                 .map(this::toDto)
                 .orElse(null);
     }
 
     public void updateUser(Long id, UserDto dto) {
-        log.info("Updating user: {}",  dto);
         User user = userRespository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
@@ -53,7 +50,6 @@ public class UserService {
     }
 
     public void deleteUser(Long id) {
-        log.info("Deleting user: {}", id);
         User user = userRespository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         userRespository.delete(user);
