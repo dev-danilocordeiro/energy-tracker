@@ -1,0 +1,22 @@
+meta {
+  name: Delete user - inexistente
+  type: http
+  seq: 10
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/user/999999999
+  body: none
+  auth: none
+}
+
+docs {
+  Rodar logo apos "Delete user" com o mesmo id tambem serve: a segunda remocao
+  ja nao encontra o registro. O controller devolve 404 com corpo vazio.
+}
+
+tests {
+  test("responde 404 Not Found", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

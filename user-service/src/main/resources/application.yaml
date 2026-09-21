@@ -1,3 +1,10 @@
 spring:
   application:
     name: user-service
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:energy_tracker}
+    username: ${MYSQL_USER:energy}
+    password: ${MYSQL_PASSWORD:energy}
+
+server:
+  port: 8081

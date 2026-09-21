@@ -1,0 +1,21 @@
+meta {
+  name: Get user by id - inexistente
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/v1/user/999999999
+  body: none
+  auth: none
+}
+
+docs {
+  O controller devolve 404 com corpo vazio quando o service retorna null.
+}
+
+tests {
+  test("responde 404 Not Found", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

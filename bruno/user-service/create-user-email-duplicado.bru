@@ -1,0 +1,41 @@
+meta {
+  name: Create user - email duplicado
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/v1/user
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Ana",
+    "surname": "Souza",
+    "email": "{{userEmail}}",
+    "address": "Rua das Flores, 120 - Sao Paulo/SP",
+    "alerting": true,
+    "energyAlertingThreshold": 350.5
+  }
+}
+
+docs {
+  Reenvia o e-mail salvo por "Create user" (variavel userEmail), entao rode aquela
+  requisicao antes desta.
+
+  Hoje a aplicacao nao trata a violacao da UNIQUE KEY uk_user_email: o
+  DataIntegrityViolationException sobe e vira 500. O teste abaixo so garante que
+  o cadastro nao foi aceito - ajuste para 409 quando houver tratamento de erro.
+}
+
+tests {
+  test("nao aceita e-mail repetido", function() {
+    expect(res.getStatus()).to.be.at.least(400);
+  });
+}

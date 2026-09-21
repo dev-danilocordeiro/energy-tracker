@@ -1,0 +1,34 @@
+meta {
+  name: Create user - payload invalido
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/v1/user
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "surname": "Sem Nome",
+    "address": "Rua Sem Numero"
+  }
+}
+
+docs {
+  Sem name e sem email. As colunas sao NOT NULL no banco, entao a insercao falha.
+  Ainda nao existe bean validation no UserDto, por isso a resposta vem como 500 e
+  nao como 400. Quando a validacao na borda entrar, troque o teste para 400.
+}
+
+tests {
+  test("rejeita o cadastro", function() {
+    expect(res.getStatus()).to.be.at.least(400);
+  });
+}

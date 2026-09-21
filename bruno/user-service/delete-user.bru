@@ -1,0 +1,27 @@
+meta {
+  name: Delete user
+  type: http
+  seq: 9
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/user/{{userId}}
+  body: none
+  auth: none
+}
+
+docs {
+  Remove o usuario criado por "Create user". Depois desta requisicao o userId do
+  ambiente aponta para um registro que nao existe mais - rode "Create user" de
+  novo antes de repetir as requisicoes anteriores.
+}
+
+tests {
+  test("responde 204 No Content", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+
+  test("nao devolve corpo", function() {
+    expect(res.getBody()).to.be.oneOf([undefined, null, ""]);
+  });
+}
