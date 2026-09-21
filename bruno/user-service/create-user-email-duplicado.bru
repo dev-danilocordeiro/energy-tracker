@@ -29,13 +29,23 @@ docs {
   Reenvia o e-mail salvo por "Create user" (variavel userEmail), entao rode aquela
   requisicao antes desta.
 
-  Hoje a aplicacao nao trata a violacao da UNIQUE KEY uk_user_email: o
-  DataIntegrityViolationException sobe e vira 500. O teste abaixo so garante que
-  o cadastro nao foi aceito - ajuste para 409 quando houver tratamento de erro.
+  A violacao da UNIQUE KEY uk_user_email vira DataIntegrityViolationException, que
+  o RestExceptionHandler traduz para 409 com um ProblemDetail. A mensagem original
+  do banco fica so no log, em nivel WARN.
 }
 
 tests {
-  test("nao aceita e-mail repetido", function() {
-    expect(res.getStatus()).to.be.at.least(400);
+  test("responde 409 Conflict", function() {
+    expect(res.getStatus()).to.equal(409);
+  });
+
+  test("traz o problem detail do conflito", function() {
+    expect(res.body.type).to.equal("https://energy-tracker.devcordeiro.com/problems/user-conflict");
+    expect(res.body.title).to.equal("User conflicts with existing data");
+    expect(res.body.status).to.equal(409);
+  });
+
+  test("nao vaza detalhe do banco", function() {
+    expect(JSON.stringify(res.getBody())).to.not.include("uk_user_email");
   });
 }

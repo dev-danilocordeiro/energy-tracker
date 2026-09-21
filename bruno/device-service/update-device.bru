@@ -1,0 +1,41 @@
+meta {
+  name: Update device
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{deviceBaseUrl}}/api/v1/device/{{deviceId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Termostato do quarto",
+    "type": "THERMOSTAT",
+    "location": "Quarto principal",
+    "userId": {{userId}}
+  }
+}
+
+docs {
+  O update sobrescreve todos os campos - um campo omitido no payload e gravado
+  como null, inclusive o userId.
+
+  A resposta e texto puro ("Device updated successfully"), nao JSON.
+}
+
+tests {
+  test("responde 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("confirma a atualizacao", function() {
+    expect(String(res.getBody())).to.equal("Device updated successfully");
+  });
+}
