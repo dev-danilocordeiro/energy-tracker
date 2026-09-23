@@ -50,10 +50,10 @@ public class ParallelDataSimulator implements CommandLineRunner {
     @Scheduled(fixedRateString = "${simulation.interval-ms}")
     public void sendMockData() {
         int batchSize = requestsPerInterval / parallelThreads;
-        int reminder = requestsPerInterval % parallelThreads;
+        int remainder = requestsPerInterval % parallelThreads;
 
         for (int i = 0; i < parallelThreads; i++) {
-            int requestsForThread = batchSize + (i < reminder ? i : 0);
+            int requestsForThread = batchSize + (i < remainder ? 1 : 0);
             executorService.submit(() -> {
                 for (int j = 0; j < requestsForThread; j++) {
                     EnergyUsageDto energyUsageDto = EnergyUsageDto.builder()
