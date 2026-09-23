@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: ingestion-service
+  kafka:
+    bootstrap-servers:
+      - localhost:9092
+    template:
+      default-topic: energy-usage
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+server:
+  port: 8083
+
+
