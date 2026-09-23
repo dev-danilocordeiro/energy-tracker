@@ -18,12 +18,12 @@ public class UserService {
     }
     public UserDto createUser(UserDto input) {
         final User createdUser = User.builder()
-                .name(input.getName())
-                .email(input.getEmail())
-                .surname(input.getSurname())
-                .address(input.getAddress())
-                .alerting(input.isAlerting())
-                .energyAlertingThreshold(input.getEnergyAlertingThreshold())
+                .name(input.name())
+                .email(input.email())
+                .surname(input.surname())
+                .address(input.address())
+                .alerting(input.alerting())
+                .energyAlertingThreshold(input.energyAlertingThreshold())
                 .build();
         final User saved = userRespository.save(createdUser);
         return toDto(saved);
@@ -39,12 +39,12 @@ public class UserService {
         User user = userRespository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found with id " + id));
 
-        user.setName(dto.getName());
-        user.setEmail(dto.getEmail());
-        user.setSurname(dto.getSurname());
-        user.setAddress(dto.getAddress());
-        user.setAlerting(dto.isAlerting());
-        user.setEnergyAlertingThreshold(dto.getEnergyAlertingThreshold());
+        user.setName(dto.name());
+        user.setEmail(dto.email());
+        user.setSurname(dto.surname());
+        user.setAddress(dto.address());
+        user.setAlerting(dto.alerting());
+        user.setEnergyAlertingThreshold(dto.energyAlertingThreshold());
         userRespository.save(user);
     }
 

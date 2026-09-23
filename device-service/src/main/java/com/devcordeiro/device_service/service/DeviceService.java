@@ -23,10 +23,10 @@ public class DeviceService {
 
     public DeviceDto createDevice(DeviceDto deviceDto) {
         Device device = new Device();
-        device.setName(deviceDto.getName());
-        device.setLocation(deviceDto.getLocation());
-        device.setDeviceType(deviceDto.getType());
-        device.setUserId(deviceDto.getUserId());
+        device.setName(deviceDto.name());
+        device.setLocation(deviceDto.location());
+        device.setDeviceType(deviceDto.type());
+        device.setUserId(deviceDto.userId());
 
         final Device savedDevice = deviceRepository.save(device);
         return mapToDto(savedDevice);
@@ -35,10 +35,10 @@ public class DeviceService {
     public DeviceDto updateDevice(Long id, DeviceDto deviceDto) {
         Device existed = deviceRepository.findById(id)
                 .orElseThrow(() -> new DeviceNotFoundException("Device not found with id " + id));
-        existed.setName(deviceDto.getName());
-        existed.setLocation(deviceDto.getLocation());
-        existed.setDeviceType(deviceDto.getType());
-        existed.setUserId(deviceDto.getUserId());
+        existed.setName(deviceDto.name());
+        existed.setLocation(deviceDto.location());
+        existed.setDeviceType(deviceDto.type());
+        existed.setUserId(deviceDto.userId());
         final Device updatedDevice = deviceRepository.save(existed);
         return mapToDto(updatedDevice);
     }
@@ -51,12 +51,12 @@ public class DeviceService {
     }
 
     private DeviceDto mapToDto(Device device) {
-        DeviceDto deviceDto = new DeviceDto();
-        deviceDto.setId(device.getId());
-        deviceDto.setName(device.getName());
-        deviceDto.setType(device.getDeviceType());
-        deviceDto.setLocation(device.getLocation());
-        deviceDto.setUserId(device.getUserId());
-        return deviceDto;
+        return new DeviceDto(
+                device.getId(),
+                device.getName(),
+                device.getDeviceType(),
+                device.getLocation(),
+                device.getUserId()
+        );
     }
 }
