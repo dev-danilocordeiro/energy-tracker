@@ -17,3 +17,4 @@ simulation:
   endpoint: http://localhost:8083/api/v1/ingestion
   requests-per-interval: 1000
   interval-ms: 5000
+  parallel-threads: 10

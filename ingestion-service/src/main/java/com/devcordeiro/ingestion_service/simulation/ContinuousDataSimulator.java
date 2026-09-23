@@ -7,7 +7,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -29,10 +28,10 @@ public class ContinuousDataSimulator implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-
+        log.info("Continuous data simulator started");
     }
 
-    @Scheduled(fixedRateString = "${simulation.interval-ms}")
+    //@Scheduled(fixedRateString = "${simulation.interval-ms}")
     public void sendMockData() {
         for (int i = 0; i < requestsPerInterval; i++) {
             EnergyUsageDto energyUsageDto = EnergyUsageDto.builder()
