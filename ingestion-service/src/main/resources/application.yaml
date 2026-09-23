@@ -13,3 +13,7 @@ server:
   port: 8083
 
 
+simulation:
+  endpoint: http://localhost:8083/api/v1/ingestion
+  requests-per-interval: 1000
+  interval-ms: 5000
