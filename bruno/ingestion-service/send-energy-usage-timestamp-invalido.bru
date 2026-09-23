@@ -1,0 +1,37 @@
+meta {
+  name: Send energy usage - timestamp invalido
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{ingestionBaseUrl}}/api/v1/ingestion
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "deviceId": {{deviceId}},
+    "energyConsumed": 1.25,
+    "timestamp": "22/09/2026 14:30"
+  }
+}
+
+docs {
+  Instant so aceita ISO-8601 em UTC (ex.: 2026-09-22T14:30:00Z). O Jackson falha
+  na desserializacao antes de chegar ao controller e nada e publicado no Kafka.
+
+  O ingestion-service ainda nao liga spring.mvc.problemdetails.enabled, entao o
+  corpo e o erro padrao do Spring Boot, nao problem+json.
+}
+
+tests {
+  test("responde 400 Bad Request", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

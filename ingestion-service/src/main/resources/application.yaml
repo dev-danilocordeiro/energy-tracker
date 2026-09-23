@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: ingestion-service
+  kafka:
+    bootstrap-servers:
+      - localhost:9092
+    template:
+      default-topic: energy-usage
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+server:
+  port: 8083
+
+
+simulation:
+  endpoint: http://localhost:8083/api/v1/ingestion
+  requests-per-interval: 1000
+  interval-ms: 5000
+  parallel-threads: 10

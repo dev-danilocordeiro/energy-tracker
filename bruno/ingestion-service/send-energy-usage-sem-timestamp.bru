@@ -1,0 +1,34 @@
+meta {
+  name: Send energy usage - sem timestamp
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{ingestionBaseUrl}}/api/v1/ingestion
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "deviceId": {{deviceId}},
+    "energyConsumed": 0.8
+  }
+}
+
+docs {
+  O EnergyUsageDto ainda nao tem bean validation, entao a leitura e aceita e o
+  evento vai para o Kafka com "timestamp": null. Quando a validacao na borda
+  entrar, esta requisicao deve passar a responder 400 - troque o teste abaixo.
+}
+
+tests {
+  test("responde 201 Created", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

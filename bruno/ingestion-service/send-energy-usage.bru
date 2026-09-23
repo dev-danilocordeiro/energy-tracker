@@ -1,0 +1,47 @@
+meta {
+  name: Send energy usage
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{ingestionBaseUrl}}/api/v1/ingestion
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "deviceId": {{deviceId}},
+    "energyConsumed": 1.25,
+    "timestamp": "{{ingestionTimestamp}}"
+  }
+}
+
+docs {
+  Publica um EnergyUsageEvent no topico energy-usage. O endpoint nao devolve
+  corpo - para conferir a mensagem, abra o Kafka UI (http://localhost:8090) em
+  Topics > energy-usage > Messages.
+
+  O timestamp e gerado no pre-request com a hora atual em UTC (ISO-8601), o
+  formato que o Instant espera. O deviceId vem do ambiente, mas o
+  ingestion-service nao consulta o device-service: qualquer numero e aceito.
+}
+
+script:pre-request {
+  bru.setVar("ingestionTimestamp", new Date().toISOString());
+}
+
+tests {
+  test("responde 201 Created", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("nao devolve corpo", function() {
+    expect(res.getBody()).to.be.oneOf([undefined, null, ""]);
+  });
+}
