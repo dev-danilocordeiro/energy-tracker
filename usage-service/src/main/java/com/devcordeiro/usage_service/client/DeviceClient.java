@@ -2,30 +2,29 @@ package com.devcordeiro.usage_service.client;
 
 import com.devcordeiro.usage_service.dto.DeviceDto;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClient;
+
+import java.util.Optional;
 
 @Component
 public class DeviceClient {
 
-    private final RestTemplate restTemplate;
+    private final RestClient restClient;
 
-    private final String baseUrl;
-    public DeviceClient(@Value("${device.service.url}") final String baseUrl) {
-        this.restTemplate = new RestTemplate();
-        this.baseUrl = baseUrl;
+    public DeviceClient(@Value("${device.service.url}") String baseUrl) {
+        this.restClient = RestClient.create(baseUrl);
     }
 
-    public DeviceDto getDeviceById(Long deviceId) {
-        String url = UriComponentsBuilder
-                .fromUriString(baseUrl)
-                .path("/{deviceId}")
-                .buildAndExpand(deviceId)
-                .toUriString();
-
-        ResponseEntity<DeviceDto> response = restTemplate.getForEntity(url, DeviceDto.class);
-        return response.getBody();
+    public Optional<DeviceDto> findById(Long deviceId) {
+        try {
+            return Optional.ofNullable(restClient.get()
+                    .uri("/{deviceId}", deviceId)
+                    .retrieve()
+                    .body(DeviceDto.class));
+        } catch (HttpClientErrorException.NotFound e) {
+            return Optional.empty();
+        }
     }
 }
