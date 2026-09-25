@@ -1,0 +1,37 @@
+server:
+  port: 8084
+spring:
+  application:
+    name: usage-service
+  kafka:
+    template:
+      default-topic: energy-alerts
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+    bootstrap-servers:
+      - localhost:9092
+    consumer:
+      group-id: usage-service
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+      properties:
+        spring:
+          json:
+            type:
+              mapping: energyUsageEvent:com.devcordeiro.kafka.event.EnergyUsageEvent
+
+influx:
+  url: http://localhost:8072
+  token: my-token
+  org: energy-tracker
+  bucket: usage-bucket
+
+device:
+  service:
+    url: http://localhost:8082/api/v1/device
+
+
+user:
+  service:
+    url: http://localhost:8081/api/v1/user
