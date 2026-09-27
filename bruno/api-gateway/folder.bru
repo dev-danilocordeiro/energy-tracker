@@ -3,6 +3,10 @@ meta {
   seq: 5
 }
 
+auth {
+  mode: inherit
+}
+
 docs {
   As mesmas chamadas das outras pastas, mas passando pelo api-gateway
   (gatewayBaseUrl, porta 9000) em vez de bater direto em cada servico.
@@ -11,6 +15,10 @@ docs {
   (userId e deviceId sao gravados no ambiente), entao rode a pasta inteira na
   ordem - "Run folder" no Bruno. O gateway so repassa, nao reescreve path nem
   corpo, entao status e respostas devem ser identicos aos da chamada direta.
+
+  O gateway exige JWT: as requisicoes usam Auth > Inherit e recebem o token
+  het-token configurado na colecao (Keycloak precisa estar no ar). A subpasta
+  actuator fica sem auth, porque /actuator/** e liberado no gateway.
 
   Precisa do gateway e de todos os servicos no ar. O alert-service nao tem
   rota: ele nao expoe HTTP, so consome eventos do Kafka.

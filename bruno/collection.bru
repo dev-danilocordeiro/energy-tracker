@@ -3,5 +3,36 @@ headers {
 }
 
 auth {
-  mode: none
+  mode: oauth2
+}
+
+auth:oauth2 {
+  grant_type: client_credentials
+  access_token_url: http://localhost:8091/realms/het-security-realm/protocol/openid-connect/token
+  refresh_token_url: 
+  client_id: home-energy-tracker-client
+  client_secret: {{process.env.HET_CLIENT_SECRET}}
+  scope: 
+  credentials_placement: body
+  credentials_id: het-token
+  token_source: access_token
+  token_placement: header
+  token_header_prefix: Bearer
+  auto_fetch_token: true
+  auto_refresh_token: true
+}
+
+docs {
+  Token do Keycloak (realm het-security-realm, client home-energy-tracker-client,
+  grant client_credentials) salvo com o id het-token.
+
+  Para usar numa requisicao:
+  - Auth > Inherit: herda esta configuracao e manda o Authorization sozinho;
+  - ou, em qualquer outro lugar, {{$oauth2.het-token.access_token}}.
+
+  O client secret vem de bruno/.env (HET_CLIENT_SECRET), que nao vai para o git -
+  copie bruno/.env.example e preencha com o secret da aba Credentials do client.
+
+  As requisicoes direto nos servicos continuam com Auth > No Auth, entao nada
+  muda para elas.
 }
