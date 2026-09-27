@@ -8,10 +8,9 @@ Home Energy Tracker: Spring Boot 4.1.1 / Java 21 microservices that ingest energ
 readings from devices, aggregate them in InfluxDB, email users when they cross a
 threshold and generate saving tips with a local LLM (Ollama).
 
-**The README is ahead of the code.** It describes Keycloak/JWT on the gateway,
-Prometheus, Grafana and springdoc — none of these exist yet (no dependencies, no
-config, no `docker/` folder). Trust the code, not the README, and don't assume those
-pieces are there.
+**The README is ahead of the code.** It describes Prometheus, Grafana and
+springdoc — none of these exist yet (no dependencies, no config, no `docker/`
+folder). Trust the code, not the README, and don't assume those pieces are there.
 
 ## Modules
 
@@ -33,7 +32,7 @@ Flow: `ingestion -> [energy-usage] -> usage -> [energy-alerts] -> alert`.
 ## Commands
 
 ```bash
-docker compose up -d                  # MySQL, Kafka, Kafka UI, InfluxDB, Mailpit
+docker compose up -d                  # MySQL, Kafka, Kafka UI, InfluxDB, Mailpit, Keycloak
 cp .env.example .env                  # first time only
 
 cd <module> && ./mvnw verify          # build + tests for one module
@@ -45,6 +44,8 @@ cd <module> && ./mvnw spring-boot:run
 - Each module has a `@SpringBootTest` `contextLoads` test. In modules that use MySQL,
   Kafka or InfluxDB, it needs `docker compose` up to pass.
 - Ollama is not in compose. insight-service expects it at `localhost:11434`.
+- Keycloak: `http://localhost:8091`, admin `admin`/`admin` (created only on the
+  first start, when its Postgres volume is empty).
 
 ## Conventions
 
@@ -93,6 +94,13 @@ cd <module> && ./mvnw spring-boot:run
 - Circuit breakers do not appear in `/actuator/health`: resilience4j-spring-boot3
   2.3.0 targets Boot 3's health package. Use `/actuator/circuitbreakers`.
 - Target URLs are hardcoded to `localhost`.
+- Every request needs a Keycloak JWT except the paths in `security.excluded.urls`
+  (`/actuator/**`). Tokens come from realm `het-security-realm`, client
+  `home-energy-tracker-client` (`client_credentials`). The realm is **not** in the
+  repo yet: it was created by hand in the Keycloak admin console, so a fresh
+  `keycloak-db-data` volume has no realm and every gateway call returns 401.
+- Don't name the filter chain bean `springSecurityFilterChain`: that name makes
+  Boot skip `@EnableWebSecurity`, and startup fails with no `HttpSecurity` bean.
 
 ## Testing
 
@@ -113,6 +121,12 @@ cd <module> && ./mvnw spring-boot:run
   `userEmail`). Base URLs are in `bruno/environments/local.bru`.
 - `userId`, `deviceId` and `userEmail` in `local.bru` change on every run. Don't
   commit those changes.
+- `collection.bru` defines an OAuth2 `client_credentials` config with
+  `credentials_id: het-token`. Requests through the gateway use `auth: inherit`;
+  anywhere else the token is `{{$oauth2.het-token.access_token}}`. Requests that
+  call a service directly stay `auth: none`.
+- The client secret is read from `bruno/.env` (`HET_CLIENT_SECRET`, gitignored,
+  see `bruno/.env.example`). Never write the secret into a `.bru` file.
 - When you add or change an endpoint, add or update its Bruno request.
 
 ## Git
