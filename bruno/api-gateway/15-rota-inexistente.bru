@@ -1,0 +1,22 @@
+meta {
+  name: Rota nao mapeada
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{gatewayBaseUrl}}/api/v1/alert
+  body: none
+  auth: none
+}
+
+docs {
+  Nenhuma rota do gateway casa com /api/v1/alert (o alert-service nao expoe
+  HTTP), entao quem responde e o proprio gateway, sem repassar a ninguem.
+}
+
+tests {
+  test("responde 404 Not Found", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

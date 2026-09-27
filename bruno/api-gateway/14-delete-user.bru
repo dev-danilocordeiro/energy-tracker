@@ -1,0 +1,22 @@
+meta {
+  name: Delete user
+  type: http
+  seq: 14
+}
+
+delete {
+  url: {{gatewayBaseUrl}}/api/v1/user/{{userId}}
+  body: none
+  auth: none
+}
+
+docs {
+  Fecha o fluxo. Depois daqui userId e deviceId apontam para registros que nao
+  existem mais - rode a pasta de novo a partir de "Create user".
+}
+
+tests {
+  test("responde 204 No Content", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
