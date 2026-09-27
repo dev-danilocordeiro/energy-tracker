@@ -96,9 +96,15 @@ cd <module> && ./mvnw spring-boot:run
 - Target URLs are hardcoded to `localhost`.
 - Every request needs a Keycloak JWT except the paths in `security.excluded.urls`
   (`/actuator/**`). Tokens come from realm `het-security-realm`, client
-  `home-energy-tracker-client` (`client_credentials`). The realm is **not** in the
-  repo yet: it was created by hand in the Keycloak admin console, so a fresh
-  `keycloak-db-data` volume has no realm and every gateway call returns 401.
+  `home-energy-tracker-client` (`client_credentials`).
+- The realm lives in `keycloak/het-security-realm-realm.json` and is imported on
+  startup (`--import-realm`). Keycloak requires the `<realm>-realm.json` file name.
+  Import skips realms that already exist, so after changing the realm in the admin
+  console, re-export it (`kc.sh export --realm het-security-realm --users realm_file`),
+  then replace the client secret with `${HET_CLIENT_SECRET}` and drop the
+  `org.keycloak.keys.KeyProvider` components (private keys) before committing.
+- The client secret comes from `HET_CLIENT_SECRET` in the root `.env` at import
+  time and must match `HET_CLIENT_SECRET` in `bruno/.env`.
 - Don't name the filter chain bean `springSecurityFilterChain`: that name makes
   Boot skip `@EnableWebSecurity`, and startup fails with no `HttpSecurity` bean.
 

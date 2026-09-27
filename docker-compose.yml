@@ -128,7 +128,10 @@ services:
     image: quay.io/keycloak/keycloak:26.7.4
     container_name: energy-tracker-keycloak
     restart: unless-stopped
-    command: start-dev
+    # Imports keycloak/het-security-realm-realm.json on startup. Realms that already
+    # exist in the database are skipped, so edits made in the admin console survive
+    # restarts - re-export the realm to keep this file in sync.
+    command: start-dev --import-realm
     depends_on:
       keycloak-db:
         condition: service_healthy
@@ -143,6 +146,10 @@ services:
       KC_DB_USERNAME: ${KEYCLOAK_DB_USERNAME:-keycloak}
       KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak}
       KC_HEALTH_ENABLED: "true"
+      # Replaces ${HET_CLIENT_SECRET} in the realm file at import time
+      HET_CLIENT_SECRET: ${HET_CLIENT_SECRET:-het-local-dev-secret}
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
     healthcheck:
       # The image has no curl; health is served on the management port (9000, not published)
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
