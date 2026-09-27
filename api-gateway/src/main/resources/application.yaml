@@ -23,6 +23,10 @@ management:
           - info
           - metrics
           - circuitbreakers
+          - prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 resilience4j:
   circuitbreaker:
