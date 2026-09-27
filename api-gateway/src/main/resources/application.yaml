@@ -3,6 +3,11 @@ server:
 spring:
   application:
     name: api-gateway
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8091/realms/het-security-realm
 management:
   health:
     circuitbreakers:
@@ -31,13 +36,6 @@ resilience4j:
         waitDurationInOpenState: 5s
         permittedNumberOfCallsInHalfOpenState: 2
         automaticTransitionFromOpenToHalfOpenEnabled: true
-    # Declarados aqui para existirem desde o startup - sem isto cada um so e
-    # criado na primeira chamada e fica fora do /actuator/circuitbreakers e das
-    # metricas ate la.
-    #
-    # Eles nao aparecem no /actuator/health: o resilience4j-spring-boot3 2.3.0
-    # usa o pacote de health do Boot 3, que o Boot 4 moveu, entao o
-    # registerHealthIndicator nao tem efeito.
     instances:
       userServiceCircuitBreaker:
         baseConfig: default
@@ -49,11 +47,16 @@ resilience4j:
         baseConfig: default
       insightServiceCircuitBreaker:
         baseConfig: default
-
-  # O Spring Cloud CircuitBreaker envolve cada chamada num TimeLimiter de 1s por
-  # padrao. O insight-service espera o Ollama por dezenas de segundos, entao com
-  # o padrao toda chamada dele cairia no fallback.
   timelimiter:
     instances:
       insightServiceCircuitBreaker:
         timeoutDuration: 120s
+
+keycloak:
+  auth:
+    jwk-set-uri: http://localhost:8091/realms/het-security-realm/protocol/openid-connect/certs
+
+
+security:
+  excluded:
+    urls: /actuator/**
