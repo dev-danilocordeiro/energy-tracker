@@ -1,7 +1,7 @@
 meta {
-  name: Send energy usage - timestamp invalido
+  name: Send energy usage - sem deviceId
   type: http
-  seq: 3
+  seq: 4
 }
 
 post {
@@ -10,23 +10,21 @@ post {
   auth: none
 }
 
-headers {
-  Content-Type: application/json
-}
-
 body:json {
   {
-    "deviceId": {{deviceId}},
     "energyConsumed": 1.25,
-    "timestamp": "22/09/2026 14:30"
+    "timestamp": "{{ingestionTimestamp}}"
   }
 }
 
 docs {
-  Instant so aceita ISO-8601 em UTC (ex.: 2026-09-22T14:30:00Z). O Jackson falha
-  na desserializacao antes de chegar ao controller e nada e publicado no Kafka.
+  Sem deviceId a leitura seria gravada no InfluxDB com a tag "null" e quebraria
+  a agregacao do usage-service. O @NotNull no EnergyUsageDto barra a requisicao
+  com 400 antes de publicar no Kafka.
+}
 
-  Com spring.mvc.problemdetails.enabled, o corpo vem como problem+json.
+script:pre-request {
+  bru.setVar("ingestionTimestamp", new Date().toISOString());
 }
 
 tests {
