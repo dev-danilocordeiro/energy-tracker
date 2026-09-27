@@ -3,3 +3,57 @@ server:
 spring:
   application:
     name: api-gateway
+management:
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoint:
+    health:
+      show-details: ALWAYS
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - info
+          - metrics
+          - circuitbreakers
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 8
+        failureRateThreshold: 20
+        minimum-number-of-calls: 4
+        waitDurationInOpenState: 5s
+        permittedNumberOfCallsInHalfOpenState: 2
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+    # Declarados aqui para existirem desde o startup - sem isto cada um so e
+    # criado na primeira chamada e fica fora do /actuator/circuitbreakers e das
+    # metricas ate la.
+    #
+    # Eles nao aparecem no /actuator/health: o resilience4j-spring-boot3 2.3.0
+    # usa o pacote de health do Boot 3, que o Boot 4 moveu, entao o
+    # registerHealthIndicator nao tem efeito.
+    instances:
+      userServiceCircuitBreaker:
+        baseConfig: default
+      deviceServiceCircuitBreaker:
+        baseConfig: default
+      ingestionServiceCircuitBreaker:
+        baseConfig: default
+      usageServiceCircuitBreaker:
+        baseConfig: default
+      insightServiceCircuitBreaker:
+        baseConfig: default
+
+  # O Spring Cloud CircuitBreaker envolve cada chamada num TimeLimiter de 1s por
+  # padrao. O insight-service espera o Ollama por dezenas de segundos, entao com
+  # o padrao toda chamada dele cairia no fallback.
+  timelimiter:
+    instances:
+      insightServiceCircuitBreaker:
+        timeoutDuration: 120s

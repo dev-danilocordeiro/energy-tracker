@@ -1,0 +1,40 @@
+meta {
+  name: Circuit breakers
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{gatewayBaseUrl}}/actuator/circuitbreakers
+  body: none
+  auth: none
+}
+
+docs {
+  Estado e contadores de cada circuit breaker. Com um servico fora do ar, 4
+  chamadas seguidas pelo gateway (minimum-number-of-calls) abrem o circuito:
+  state vira OPEN e as chamadas seguintes contam em notPermittedCalls. Apos 5s
+  ele passa sozinho para HALF_OPEN.
+}
+
+tests {
+  test("responde 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("lista um circuit breaker por servico", function() {
+    expect(res.body.circuitBreakers).to.have.all.keys(
+      "userServiceCircuitBreaker",
+      "deviceServiceCircuitBreaker",
+      "ingestionServiceCircuitBreaker",
+      "usageServiceCircuitBreaker",
+      "insightServiceCircuitBreaker"
+    );
+  });
+
+  test("todos tem um estado valido", function() {
+    Object.values(res.body.circuitBreakers).forEach(cb => {
+      expect(cb.state).to.be.oneOf(["CLOSED", "OPEN", "HALF_OPEN"]);
+    });
+  });
+}
