@@ -1,0 +1,36 @@
+meta {
+  name: Get overview
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{insightBaseUrl}}/api/v1/insight/overview/{{userId}}
+  body: none
+  auth: none
+}
+
+docs {
+  Busca o consumo por dispositivo dos ultimos 3 dias no usage-service e pede ao
+  Ollama um resumo com recomendacoes. Mesmas dependencias de "Get saving tips".
+
+  A resposta do modelo pode levar dezenas de segundos.
+}
+
+tests {
+  test("responde 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("devolve o insight do usuario pedido", function() {
+    expect(res.body.userId).to.equal(Number(bru.getEnvVar("userId")));
+  });
+
+  test("traz o resumo gerado pelo modelo", function() {
+    expect(res.body.tips).to.be.a("string").and.not.be.empty;
+  });
+
+  test("traz o consumo total do periodo", function() {
+    expect(res.body.energyUsage).to.be.a("number").and.to.be.at.least(0);
+  });
+}
