@@ -16,15 +16,18 @@ public class LoggingAspect {
     @Pointcut("execution(* com.devcordeiro.user_service.service..*(..))")
     public void serviceMethods() {}
 
+    // Arguments and results carry personal data (e-mail, address), so they only go to DEBUG
     @Before("serviceMethods()")
     public void logBefore(JoinPoint joinPoint) {
-        log.info("Called service method: {} with arguments: {} ",
+        log.info("Called service method: {}", joinPoint.getSignature().getName());
+        log.debug("Service method {} arguments: {}",
                 joinPoint.getSignature().getName(), joinPoint.getArgs());
     }
 
     @AfterReturning(pointcut = "serviceMethods()", returning = "result")
     public void logAfterReturning(JoinPoint joinPoint, Object result) {
-        log.info("Service method: {}, returned: {}",
+        log.info("Service method {} returned", joinPoint.getSignature().getName());
+        log.debug("Service method {} returned: {}",
                 joinPoint.getSignature().getName(), result);
     }
 }
