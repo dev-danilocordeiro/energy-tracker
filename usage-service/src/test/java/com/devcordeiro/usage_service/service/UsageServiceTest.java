@@ -17,6 +17,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.client.ResourceAccessException;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,6 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -41,11 +47,12 @@ class UsageServiceTest {
     @Mock
     private KafkaTemplate<String, AlertingEvent> kafkaTemplate;
 
+    private final MutableClock clock = new MutableClock(Instant.parse("2026-09-27T12:00:00Z"));
     private UsageService usageService;
 
     @BeforeEach
     void setUp() {
-        usageService = new UsageService(energyUsageRepository, deviceClient, userClient, kafkaTemplate);
+        usageService = new UsageService(energyUsageRepository, deviceClient, userClient, kafkaTemplate, clock);
     }
 
     @Test
@@ -116,6 +123,52 @@ class UsageServiceTest {
     }
 
     @Test
+    void alertsAUserOnlyOnceWhileTheyStayOverTheThresholdWithinTheCooldown() {
+        givenDeviceEnergies(new DeviceEnergy(1L, 150.0));
+        givenDevice(1L, 10L);
+        givenUser(10L, true, 100.0);
+
+        usageService.checkEnergyThresholds();
+        clock.advance(Duration.ofSeconds(10));
+        usageService.checkEnergyThresholds();
+        clock.advance(UsageService.ALERT_COOLDOWN.minusSeconds(20));
+        usageService.checkEnergyThresholds();
+
+        verify(kafkaTemplate, times(1)).send(eq(UsageService.ALERTS_TOPIC), any(AlertingEvent.class));
+    }
+
+    @Test
+    void alertsTheSameUserAgainOnceTheCooldownHasPassed() {
+        givenDeviceEnergies(new DeviceEnergy(1L, 150.0));
+        givenDevice(1L, 10L);
+        givenUser(10L, true, 100.0);
+
+        usageService.checkEnergyThresholds();
+        clock.advance(UsageService.ALERT_COOLDOWN);
+        usageService.checkEnergyThresholds();
+
+        verify(kafkaTemplate, times(2)).send(eq(UsageService.ALERTS_TOPIC), any(AlertingEvent.class));
+    }
+
+    @Test
+    void theCooldownOfOneUserDoesNotSilenceAnother() {
+        givenDeviceEnergies(new DeviceEnergy(1L, 150.0));
+        givenDevice(1L, 10L);
+        givenUser(10L, true, 100.0);
+        usageService.checkEnergyThresholds();
+
+        givenDeviceEnergies(new DeviceEnergy(1L, 150.0), new DeviceEnergy(2L, 150.0));
+        givenDevice(2L, 20L);
+        givenUser(20L, true, 100.0);
+        clock.advance(Duration.ofSeconds(10));
+        usageService.checkEnergyThresholds();
+
+        ArgumentCaptor<AlertingEvent> alerts = ArgumentCaptor.forClass(AlertingEvent.class);
+        verify(kafkaTemplate, times(2)).send(eq(UsageService.ALERTS_TOPIC), alerts.capture());
+        assertThat(alerts.getAllValues()).extracting(AlertingEvent::userId).containsExactly(10L, 20L);
+    }
+
+    @Test
     void returnsAnEmptyDeviceListWhenTheUserHasNoDevices() {
         when(deviceClient.getAllDevicesForUser(10L)).thenReturn(List.of());
 
@@ -157,5 +210,32 @@ class UsageServiceTest {
                 .alerting(alerting)
                 .energyAlertingThreshold(threshold)
                 .build()));
+    }
+
+    private static final class MutableClock extends Clock {
+        private Instant now;
+
+        private MutableClock(Instant now) {
+            this.now = now;
+        }
+
+        void advance(Duration duration) {
+            now = now.plus(duration);
+        }
+
+        @Override
+        public Instant instant() {
+            return now;
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(ZoneId zone) {
+            throw new UnsupportedOperationException();
+        }
     }
 }

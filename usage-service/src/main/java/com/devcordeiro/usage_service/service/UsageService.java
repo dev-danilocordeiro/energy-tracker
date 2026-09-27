@@ -15,9 +15,11 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -25,25 +27,33 @@ public class UsageService {
 
     static final String ALERTS_TOPIC = "energy-alerts";
     static final Duration AGGREGATION_WINDOW = Duration.ofHours(1);
+    // The check runs every 10 seconds over a 1 hour window, so without a cooldown a user
+    // above the threshold would be alerted on every run
+    static final Duration ALERT_COOLDOWN = AGGREGATION_WINDOW;
 
     private final EnergyUsageRepository energyUsageRepository;
     private final DeviceClient deviceClient;
     private final UserClient userClient;
     private final KafkaTemplate<String, AlertingEvent> kafkaTemplate;
+    private final Clock clock;
+    // In memory, so a restart may send one extra alert per user
+    private final Map<Long, Instant> lastAlertByUser = new ConcurrentHashMap<>();
 
     public UsageService(EnergyUsageRepository energyUsageRepository,
                         DeviceClient deviceClient,
                         UserClient userClient,
-                        KafkaTemplate<String, AlertingEvent> kafkaTemplate) {
+                        KafkaTemplate<String, AlertingEvent> kafkaTemplate,
+                        Clock clock) {
         this.energyUsageRepository = energyUsageRepository;
         this.deviceClient = deviceClient;
         this.userClient = userClient;
         this.kafkaTemplate = kafkaTemplate;
+        this.clock = clock;
     }
 
     @Scheduled(cron = "*/10 * * * * *")
     public void checkEnergyThresholds() {
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         List<DeviceEnergy> deviceEnergies = energyUsageRepository.sumEnergyByDevice(now.minus(AGGREGATION_WINDOW), now);
         log.info("Aggregated energy for {} devices over the past hour", deviceEnergies.size());
 
@@ -76,6 +86,13 @@ public class UsageService {
             return;
         }
 
+        Instant now = clock.instant();
+        Instant lastAlert = lastAlertByUser.get(userId);
+        if (lastAlert != null && now.isBefore(lastAlert.plus(ALERT_COOLDOWN))) {
+            log.debug("User {} is over threshold but was already alerted at {}", userId, lastAlert);
+            return;
+        }
+
         log.info("ALERT: user {} exceeded energy threshold. Total consumption {}, threshold {}", userId, totalConsumption, threshold);
         AlertingEvent alertingEvent = AlertingEvent.builder()
                 .userId(userId)
@@ -85,6 +102,7 @@ public class UsageService {
                 .email(user.get().email())
                 .build();
         kafkaTemplate.send(ALERTS_TOPIC, alertingEvent);
+        lastAlertByUser.put(userId, now);
     }
 
     // A failing lookup skips that device or user instead of aborting the whole cycle
@@ -137,7 +155,7 @@ public class UsageService {
                 .filter(Objects::nonNull)
                 .toList();
 
-        final Instant now = Instant.now();
+        final Instant now = clock.instant();
         final Instant start = now.minus(Duration.ofDays(days));
 
         final Map<Long, Double> aggregatedMap = new HashMap<>();
