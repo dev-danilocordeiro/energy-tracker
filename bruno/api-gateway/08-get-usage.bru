@@ -1,0 +1,39 @@
+meta {
+  name: Get usage
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{gatewayBaseUrl}}/api/v1/usage/{{userId}}?days=3
+  body: none
+  auth: none
+}
+
+params:query {
+  days: 3
+}
+
+docs {
+  Rota usage-service -> localhost:8084. Nao tem requisicao equivalente fora
+  desta pasta.
+
+  Devolve os dispositivos do usuario com o consumo somado nos ultimos "days"
+  dias (default 3). Como a gravacao vinda do Kafka e assincrona, o
+  energyConsumed pode ainda nao refletir o "Send energy usage" anterior.
+}
+
+tests {
+  test("responde 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("devolve o consumo do usuario pedido", function() {
+    expect(res.body.userId).to.equal(Number(bru.getEnvVar("userId")));
+  });
+
+  test("inclui o dispositivo criado", function() {
+    const ids = res.body.devices.map(d => d.id);
+    expect(ids).to.include(Number(bru.getEnvVar("deviceId")));
+  });
+}

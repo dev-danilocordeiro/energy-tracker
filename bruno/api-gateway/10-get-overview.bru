@@ -1,0 +1,29 @@
+meta {
+  name: Get overview
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{gatewayBaseUrl}}/api/v1/insight/overview/{{userId}}
+  body: none
+  auth: none
+}
+
+docs {
+  Mesmas dependencias de "Get saving tips".
+}
+
+tests {
+  test("responde 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("devolve o insight do usuario pedido", function() {
+    expect(res.body.userId).to.equal(Number(bru.getEnvVar("userId")));
+  });
+
+  test("traz o resumo gerado pelo modelo", function() {
+    expect(res.body.tips).to.be.a("string").and.not.be.empty;
+  });
+}

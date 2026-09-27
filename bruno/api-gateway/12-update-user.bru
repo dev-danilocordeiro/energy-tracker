@@ -1,0 +1,41 @@
+meta {
+  name: Update user
+  type: http
+  seq: 12
+}
+
+put {
+  url: {{gatewayBaseUrl}}/api/v1/user/{{userId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Ana Paula",
+    "surname": "Souza Lima",
+    "email": "{{userEmail}}",
+    "address": "Av. Paulista, 1000 - Sao Paulo/SP",
+    "alerting": false,
+    "energyAlertingThreshold": 480
+  }
+}
+
+docs {
+  O update sobrescreve todos os campos, por isso reenvia o userEmail.
+  A resposta e texto puro ("User updated successfully"), nao JSON.
+}
+
+tests {
+  test("responde 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("confirma a atualizacao", function() {
+    expect(String(res.getBody())).to.equal("User updated successfully");
+  });
+}

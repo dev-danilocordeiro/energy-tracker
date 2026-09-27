@@ -1,0 +1,17 @@
+meta {
+  name: Delete device
+  type: http
+  seq: 13
+}
+
+delete {
+  url: {{gatewayBaseUrl}}/api/v1/device/{{deviceId}}
+  body: none
+  auth: none
+}
+
+tests {
+  test("responde 204 No Content", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

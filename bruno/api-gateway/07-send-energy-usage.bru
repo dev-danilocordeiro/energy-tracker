@@ -1,0 +1,40 @@
+meta {
+  name: Send energy usage
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{gatewayBaseUrl}}/api/v1/ingestion
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "deviceId": {{deviceId}},
+    "energyConsumed": 1.25,
+    "timestamp": "{{ingestionTimestamp}}"
+  }
+}
+
+docs {
+  Rota ingestion-service -> localhost:8083. Publica um EnergyUsageEvent no
+  topico energy-usage; o usage-service consome e grava no InfluxDB de forma
+  assincrona, entao a leitura pode levar alguns segundos para aparecer em
+  "Get usage".
+}
+
+script:pre-request {
+  bru.setVar("ingestionTimestamp", new Date().toISOString());
+}
+
+tests {
+  test("responde 201 Created", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

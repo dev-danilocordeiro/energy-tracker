@@ -1,0 +1,21 @@
+meta {
+  name: Get device by id
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{gatewayBaseUrl}}/api/v1/device/{{deviceId}}
+  body: none
+  auth: none
+}
+
+tests {
+  test("responde 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("devolve o dispositivo pedido", function() {
+    expect(res.body.id).to.equal(Number(bru.getEnvVar("deviceId")));
+  });
+}

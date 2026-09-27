@@ -1,0 +1,17 @@
+meta {
+  name: api-gateway
+  seq: 5
+}
+
+docs {
+  As mesmas chamadas das outras pastas, mas passando pelo api-gateway
+  (gatewayBaseUrl, porta 9000) em vez de bater direto em cada servico.
+
+  As requisicoes formam um fluxo de ponta a ponta e dependem umas das outras
+  (userId e deviceId sao gravados no ambiente), entao rode a pasta inteira na
+  ordem - "Run folder" no Bruno. O gateway so repassa, nao reescreve path nem
+  corpo, entao status e respostas devem ser identicos aos da chamada direta.
+
+  Precisa do gateway e de todos os servicos no ar. O alert-service nao tem
+  rota: ele nao expoe HTTP, so consome eventos do Kafka.
+}

@@ -1,0 +1,56 @@
+meta {
+  name: Create user
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{gatewayBaseUrl}}/api/v1/user
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Ana",
+    "surname": "Souza",
+    "email": "{{emailAleatorio}}",
+    "address": "Rua das Flores, 120 - Sao Paulo/SP",
+    "alerting": true,
+    "energyAlertingThreshold": 350.5
+  }
+}
+
+docs {
+  Rota user-service -> localhost:8081.
+}
+
+script:pre-request {
+  // e-mail tem UNIQUE KEY no banco, entao cada execucao usa um novo
+  bru.setVar("emailAleatorio", `ana.souza+${Date.now()}@example.com`);
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setEnvVar("userId", res.body.id);
+    bru.setEnvVar("userEmail", res.body.email);
+  }
+}
+
+tests {
+  test("responde 201 Created", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("devolve o id gerado", function() {
+    expect(res.body.id).to.be.a("number");
+  });
+
+  test("ecoa o e-mail enviado", function() {
+    expect(res.body.email).to.equal(bru.getVar("emailAleatorio"));
+  });
+}

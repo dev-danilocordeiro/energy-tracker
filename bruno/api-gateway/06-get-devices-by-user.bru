@@ -1,0 +1,32 @@
+meta {
+  name: Get devices by user
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{gatewayBaseUrl}}/api/v1/device/user/{{userId}}
+  body: none
+  auth: none
+}
+
+docs {
+  Mesmo endpoint que o usage-service chama internamente para montar o consumo
+  por dispositivo.
+}
+
+tests {
+  test("responde 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("lista o dispositivo criado", function() {
+    const ids = res.body.map(d => d.id);
+    expect(ids).to.include(Number(bru.getEnvVar("deviceId")));
+  });
+
+  test("todos pertencem ao usuario", function() {
+    const userId = Number(bru.getEnvVar("userId"));
+    res.body.forEach(d => expect(d.userId).to.equal(userId));
+  });
+}

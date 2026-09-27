@@ -1,0 +1,33 @@
+meta {
+  name: Get user by id - inexistente
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{gatewayBaseUrl}}/api/v1/user/999999999
+  body: none
+  auth: none
+}
+
+docs {
+  Confere que o gateway repassa erros sem mexer: status, Content-Type e o
+  ProblemDetail do user-service chegam intactos. O instance continua sendo o
+  path original, ja que a rota nao reescreve o caminho.
+}
+
+tests {
+  test("responde 404 Not Found", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+
+  test("preserva o formato problem+json", function() {
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+  });
+
+  test("traz o problem detail do user-service", function() {
+    expect(res.body.title).to.equal("User not found");
+    expect(res.body.detail).to.equal("User not found with id 999999999");
+    expect(res.body.instance).to.equal("/api/v1/user/999999999");
+  });
+}
