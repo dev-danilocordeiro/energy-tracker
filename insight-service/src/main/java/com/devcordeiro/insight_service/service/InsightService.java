@@ -1,100 +1,92 @@
 package com.devcordeiro.insight_service.service;
 
 import com.devcordeiro.insight_service.client.UsageClient;
-import com.devcordeiro.insight_service.config.OllamaConfig;
 import com.devcordeiro.insight_service.dto.DeviceDto;
 import com.devcordeiro.insight_service.dto.InsightDto;
 import com.devcordeiro.insight_service.dto.UsageDto;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 public class InsightService {
 
+    static final int DAYS = 3;
+
     private final UsageClient usageClient;
-    private final OllamaChatModel ollamaChatModel;
+    private final ChatClient chatClient;
 
-    public InsightService(UsageClient usageClient,
-                          OllamaChatModel ollamaChatModel) {
+    public InsightService(UsageClient usageClient, ChatClient chatClient) {
         this.usageClient = usageClient;
-        this.ollamaChatModel = ollamaChatModel;
+        this.chatClient = chatClient;
     }
 
-    public InsightDto getSavingTips (Long userId) {
-        // Fetch data from Usage Service
-        final UsageDto usageData = usageClient.getXDaysUsageForUser(userId, 3);
-
-        if (usageData == null || usageData.devices() == null || usageData.devices().isEmpty()) {
-            log.info("User {} has no devices, skipping Ollama", userId);
+    public InsightDto getSavingTips(Long userId) {
+        final List<DeviceDto> devices = fetchDevices(userId);
+        if (devices.isEmpty()) {
             return noDevicesInsight(userId);
         }
 
-        double totalUsage = usageData.devices().stream()
-                .mapToDouble(DeviceDto::energyConsumed)
-                .sum();
-
-        log.info ("Calling Ollama for userId {} with total usage {}",
-                userId, totalUsage);
-
-        String prompt = """
-                This is my total household energy consumption over the past 3 days: %.2f kWh.
+        final double totalUsage = totalUsage(devices);
+        final String prompt = String.format(Locale.ROOT, """
+                This is my total household energy consumption over the past %d days: %.2f kWh.
                 How can I reduce my energy consumption? How does it compare to an average household?
-                Answer in Brazilian Portuguese.
-                """.formatted(totalUsage);
+                """, DAYS, totalUsage);
 
-        ChatResponse response = ollamaChatModel.call(
-                Prompt.builder()
-                        .content(prompt)
-                        .build());
-
-        return InsightDto.builder()
-                .userId(userId)
-                .tips(response.getResult().getOutput().getText())
-                .energyUsage(totalUsage)
-                .build();
+        return insight(userId, totalUsage, prompt);
     }
-    public InsightDto getOverview(Long userId) {
-        final UsageDto usageData = usageClient.getXDaysUsageForUser(userId, 3);
 
-        if (usageData == null || usageData.devices() == null || usageData.devices().isEmpty()) {
-            log.info("User {} has no devices, skipping Ollama", userId);
+    public InsightDto getOverview(Long userId) {
+        final List<DeviceDto> devices = fetchDevices(userId);
+        if (devices.isEmpty()) {
             return noDevicesInsight(userId);
         }
 
-        double totalUsage = usageData.devices().stream()
-                .mapToDouble(DeviceDto::energyConsumed)
-                .sum();
-
-        log.info("Calling Ollama for userId {} with total usage {}", userId, totalUsage);
-
-        String deviceUsage = usageData.devices().stream()
-                .map(device -> "- %s (%s, %s): %.2f kWh".formatted(
+        final String deviceUsage = devices.stream()
+                .map(device -> String.format(Locale.ROOT, "- %s (%s, %s): %.2f kWh",
                         device.name(), device.type(), device.location(), device.energyConsumed()))
                 .collect(Collectors.joining("\n"));
-
-        String prompt = """
+        final String prompt = """
                 Analyse the following energy usage data and provide a concise overview with actionable insights.
-                The data is the aggregated consumption per device over the past 3 days.
-                Answer in Brazilian Portuguese.
+                The data is the aggregated consumption per device over the past %d days.
 
                 Usage data:
                 %s
-                """.formatted(deviceUsage);
+                """.formatted(DAYS, deviceUsage);
 
-        ChatResponse response = ollamaChatModel.call(
-                Prompt.builder()
-                        .content(prompt)
-                        .build());
+        return insight(userId, totalUsage(devices), prompt);
+    }
+
+    private List<DeviceDto> fetchDevices(Long userId) {
+        final UsageDto usageData = usageClient.getXDaysUsageForUser(userId, DAYS);
+        if (usageData == null || usageData.devices() == null || usageData.devices().isEmpty()) {
+            log.info("User {} has no devices, skipping Ollama", userId);
+            return List.of();
+        }
+        return usageData.devices();
+    }
+
+    private static double totalUsage(List<DeviceDto> devices) {
+        return devices.stream()
+                .mapToDouble(DeviceDto::energyConsumed)
+                .sum();
+    }
+
+    private InsightDto insight(Long userId, double totalUsage, String prompt) {
+        log.info("Calling Ollama for userId {} with total usage {}", userId, totalUsage);
+        final String answer = chatClient.prompt()
+                .user(prompt)
+                .call()
+                .content();
 
         return InsightDto.builder()
                 .userId(userId)
-                .tips(response.getResult().getOutput().getText())
+                .tips(answer)
                 .energyUsage(totalUsage)
                 .build();
     }

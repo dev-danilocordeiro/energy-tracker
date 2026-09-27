@@ -1,6 +1,5 @@
 package com.devcordeiro.insight_service.config;
 
-import lombok.Builder;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,7 +12,8 @@ public class OllamaConfig {
         return builder.defaultSystem(
                 "You are an expert energy efficiency advisor. " +
                     "Provide concise and practical advice to users on how to reduce " +
-                    "their energy consumption based on their usage patterns."
+                    "their energy consumption based on their usage patterns. " +
+                    "Energy values are in kWh. Always answer in Brazilian Portuguese."
         ).build();
     }
 }
