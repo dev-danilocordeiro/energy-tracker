@@ -4,6 +4,7 @@ import com.devcordeiro.kafka.event.AlertingEvent;
 import com.devcordeiro.usage_service.client.DeviceClient;
 import com.devcordeiro.usage_service.client.UserClient;
 import com.devcordeiro.usage_service.dto.DeviceDto;
+import com.devcordeiro.usage_service.dto.UsageDto;
 import com.devcordeiro.usage_service.dto.UserDto;
 import com.devcordeiro.usage_service.model.DeviceEnergy;
 import com.devcordeiro.usage_service.repository.EnergyUsageRepository;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -111,6 +113,32 @@ class UsageServiceTest {
         ArgumentCaptor<AlertingEvent> alert = ArgumentCaptor.forClass(AlertingEvent.class);
         verify(kafkaTemplate).send(eq(UsageService.ALERTS_TOPIC), alert.capture());
         assertThat(alert.getValue().energyConsumed()).isEqualTo(150.0);
+    }
+
+    @Test
+    void returnsAnEmptyDeviceListWhenTheUserHasNoDevices() {
+        when(deviceClient.getAllDevicesForUser(10L)).thenReturn(List.of());
+
+        UsageDto usage = usageService.getXDaysUsageForUser(10L, 3);
+
+        assertThat(usage.userId()).isEqualTo(10L);
+        assertThat(usage.devices()).isEmpty();
+        verify(energyUsageRepository, never()).sumEnergyForDevices(any(), any(), any());
+    }
+
+    @Test
+    void reportsEachDevicesConsumptionAndZeroForDevicesWithoutReadings() {
+        when(deviceClient.getAllDevicesForUser(10L)).thenReturn(List.of(
+                DeviceDto.builder().id(1L).userId(10L).build(),
+                DeviceDto.builder().id(2L).userId(10L).build()));
+        when(energyUsageRepository.sumEnergyForDevices(eq(List.of(1L, 2L)), any(), any()))
+                .thenReturn(List.of(new DeviceEnergy(1L, 42.5)));
+
+        UsageDto usage = usageService.getXDaysUsageForUser(10L, 3);
+
+        assertThat(usage.devices())
+                .extracting(DeviceDto::id, DeviceDto::energyConsumed)
+                .containsExactly(tuple(1L, 42.5), tuple(2L, 0.0));
     }
 
     private void givenDeviceEnergies(DeviceEnergy... deviceEnergies) {

@@ -9,7 +9,6 @@ import com.devcordeiro.usage_service.dto.UserDto;
 import com.devcordeiro.usage_service.model.Device;
 import com.devcordeiro.usage_service.model.DeviceEnergy;
 import com.devcordeiro.usage_service.repository.EnergyUsageRepository;
-import com.influxdb.exceptions.InfluxException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -129,7 +128,7 @@ public class UsageService {
         if (devices.isEmpty()) {
             return UsageDto.builder()
                     .userId(userId)
-                    .devices(null)
+                    .devices(List.of())
                     .build();
         }
 
@@ -142,16 +141,8 @@ public class UsageService {
         final Instant start = now.minus(Duration.ofDays(days));
 
         final Map<Long, Double> aggregatedMap = new HashMap<>();
-        try {
-            for (DeviceEnergy deviceEnergy : energyUsageRepository.sumEnergyForDevices(deviceIds, start, now)) {
-                aggregatedMap.merge(deviceEnergy.deviceId(), deviceEnergy.energyConsumed(), Double::sum);
-            }
-        } catch (InfluxException e) {
-            log.error("Failed to query InfluxDB for user {} usage over {} days: {}", userId, days, e.getMessage());
-            return UsageDto.builder()
-                    .userId(userId)
-                    .devices(null)
-                    .build();
+        for (DeviceEnergy deviceEnergy : energyUsageRepository.sumEnergyForDevices(deviceIds, start, now)) {
+            aggregatedMap.merge(deviceEnergy.deviceId(), deviceEnergy.energyConsumed(), Double::sum);
         }
 
         for (Device device : devices) {
