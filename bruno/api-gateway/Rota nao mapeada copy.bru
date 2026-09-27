@@ -1,0 +1,22 @@
+meta {
+  name: Rota nao mapeada copy
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{gatewayBaseUrl}}/actuator/circuitbreakers
+  body: none
+  auth: none
+}
+
+tests {
+  test("responde 404 Not Found", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}
+
+docs {
+  Nenhuma rota do gateway casa com /api/v1/alert (o alert-service nao expoe
+  HTTP), entao quem responde e o proprio gateway, sem repassar a ninguem.
+}
