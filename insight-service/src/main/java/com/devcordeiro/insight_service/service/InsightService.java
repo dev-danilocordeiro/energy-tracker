@@ -30,6 +30,11 @@ public class InsightService {
         // Fetch data from Usage Service
         final UsageDto usageData = usageClient.getXDaysUsageForUser(userId, 3);
 
+        if (usageData == null || usageData.devices() == null || usageData.devices().isEmpty()) {
+            log.info("User {} has no devices, skipping Ollama", userId);
+            return noDevicesInsight(userId);
+        }
+
         double totalUsage = usageData.devices().stream()
                 .mapToDouble(DeviceDto::energyConsumed)
                 .sum();
@@ -56,6 +61,12 @@ public class InsightService {
     }
     public InsightDto getOverview(Long userId) {
         final UsageDto usageData = usageClient.getXDaysUsageForUser(userId, 3);
+
+        if (usageData == null || usageData.devices() == null || usageData.devices().isEmpty()) {
+            log.info("User {} has no devices, skipping Ollama", userId);
+            return noDevicesInsight(userId);
+        }
+
         double totalUsage = usageData.devices().stream()
                 .mapToDouble(DeviceDto::energyConsumed)
                 .sum();
@@ -85,6 +96,14 @@ public class InsightService {
                 .userId(userId)
                 .tips(response.getResult().getOutput().getText())
                 .energyUsage(totalUsage)
+                .build();
+    }
+
+    private InsightDto noDevicesInsight(Long userId) {
+        return InsightDto.builder()
+                .userId(userId)
+                .tips("Nenhum dispositivo cadastrado para este usuario. Cadastre um dispositivo para receber insights de consumo.")
+                .energyUsage(0.0)
                 .build();
     }
 }
