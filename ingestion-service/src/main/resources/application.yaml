@@ -21,3 +21,16 @@ simulation:
   requests-per-interval: 1000
   interval-ms: 5000
   parallel-threads: 10
+
+# Actuator & Prometheus (scraped by Prometheus in docker-compose)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}

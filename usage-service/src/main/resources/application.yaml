@@ -35,3 +35,16 @@ device:
 user:
   service:
     url: http://localhost:8081/api/v1/user
+
+# Actuator & Prometheus (scraped by Prometheus in docker-compose)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}

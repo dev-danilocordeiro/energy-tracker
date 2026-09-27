@@ -8,9 +8,7 @@ Home Energy Tracker: Spring Boot 4.1.1 / Java 21 microservices that ingest energ
 readings from devices, aggregate them in InfluxDB, email users when they cross a
 threshold and generate saving tips with a local LLM (Ollama).
 
-**The README is ahead of the code.** It describes Prometheus and Grafana —
-neither exists yet (no dependencies, no config, no `docker/`
-folder). Trust the code, not the README, and don't assume those pieces are there.
+The README is the project pitch; when it disagrees with the code, trust the code.
 
 ## Modules
 
@@ -32,7 +30,8 @@ Flow: `ingestion -> [energy-usage] -> usage -> [energy-alerts] -> alert`.
 ## Commands
 
 ```bash
-docker compose up -d                  # MySQL, Kafka, Kafka UI, InfluxDB, Mailpit, Keycloak
+docker compose up -d                  # MySQL, Kafka, Kafka UI, InfluxDB, Mailpit, Keycloak,
+                                      # Prometheus, Grafana
 cp .env.example .env                  # first time only
 
 cd <module> && ./mvnw verify          # build + tests for one module
@@ -43,6 +42,12 @@ cd <module> && ./mvnw spring-boot:run
   in every module you touched.
 - Each module has a `@SpringBootTest` `contextLoads` test. In modules that use MySQL,
   Kafka or InfluxDB, it needs `docker compose` up to pass.
+- Prometheus (`localhost:9090`) scrapes `/actuator/prometheus` of every app on
+  the host through `host.docker.internal` (`docker/prometheus/prometheus.yml`).
+  Grafana (`localhost:3000`, `admin`/`admin`) gets the Prometheus datasource from
+  `docker/grafana/provisioning`. A new app needs actuator +
+  `micrometer-registry-prometheus`, `prometheus` in the exposed endpoints, the
+  `management.metrics.tags.application` tag and a scrape job.
 - Ollama is not in compose. insight-service expects it at `localhost:11434`.
 - Keycloak: `http://localhost:8091`, admin `admin`/`admin` (created only on the
   first start, when its Postgres volume is empty).
