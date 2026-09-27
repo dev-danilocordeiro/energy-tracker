@@ -1,0 +1,31 @@
+meta {
+  name: Health
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{gatewayBaseUrl}}/actuator/health
+  body: none
+  auth: none
+}
+
+docs {
+  Os circuit breakers nao aparecem aqui: o resilience4j-spring-boot3 2.3.0 usa o
+  pacote de health do Boot 3, que o Boot 4 moveu. Para ver o estado deles use
+  "Circuit breakers".
+}
+
+tests {
+  test("responde 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("gateway esta UP", function() {
+    expect(res.body.status).to.equal("UP");
+  });
+
+  test("mostra os detalhes dos componentes", function() {
+    expect(res.body.components).to.be.an("object");
+  });
+}

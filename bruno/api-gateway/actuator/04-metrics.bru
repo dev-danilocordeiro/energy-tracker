@@ -1,0 +1,27 @@
+meta {
+  name: Metrics
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{gatewayBaseUrl}}/actuator/metrics
+  body: none
+  auth: none
+}
+
+docs {
+  Lista os nomes das metricas disponiveis. Para ver o valor de uma, chame
+  /actuator/metrics/{nome} - como em "Metric - circuit breaker calls".
+}
+
+tests {
+  test("responde 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("inclui as metricas do resilience4j", function() {
+    expect(res.body.names).to.include("resilience4j.circuitbreaker.state");
+    expect(res.body.names).to.include("resilience4j.circuitbreaker.calls");
+  });
+}

@@ -1,0 +1,33 @@
+meta {
+  name: Metric - circuit breaker calls
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{gatewayBaseUrl}}/actuator/metrics/resilience4j.circuitbreaker.calls?tag=name:userServiceCircuitBreaker
+  body: none
+  auth: none
+}
+
+params:query {
+  tag: name:userServiceCircuitBreaker
+}
+
+docs {
+  Chamadas que passaram pelo circuit breaker do user-service. Troque o valor da
+  tag para ver outro servico, e acrescente tag=kind:failed (ou successful,
+  ignored) para filtrar pelo resultado. As chamadas barradas com o circuito
+  aberto ficam em outra metrica, resilience4j.circuitbreaker.not.permitted.calls.
+}
+
+tests {
+  test("responde 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("traz a metrica pedida", function() {
+    expect(res.body.name).to.equal("resilience4j.circuitbreaker.calls");
+    expect(res.body.measurements).to.be.an("array").that.is.not.empty;
+  });
+}

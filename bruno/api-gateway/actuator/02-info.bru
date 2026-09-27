@@ -1,0 +1,21 @@
+meta {
+  name: Info
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{gatewayBaseUrl}}/actuator/info
+  body: none
+  auth: none
+}
+
+docs {
+  Vazio por enquanto - nenhum info contributor configurado.
+}
+
+tests {
+  test("responde 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}
