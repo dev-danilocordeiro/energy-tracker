@@ -8,8 +8,8 @@ Home Energy Tracker: Spring Boot 4.1.1 / Java 21 microservices that ingest energ
 readings from devices, aggregate them in InfluxDB, email users when they cross a
 threshold and generate saving tips with a local LLM (Ollama).
 
-**The README is ahead of the code.** It describes Prometheus, Grafana and
-springdoc — none of these exist yet (no dependencies, no config, no `docker/`
+**The README is ahead of the code.** It describes Prometheus and Grafana —
+neither exists yet (no dependencies, no config, no `docker/`
 folder). Trust the code, not the README, and don't assume those pieces are there.
 
 ## Modules
@@ -105,6 +105,12 @@ cd <module> && ./mvnw spring-boot:run
   `org.keycloak.keys.KeyProvider` components (private keys) before committing.
 - The client secret comes from `HET_CLIENT_SECRET` in the root `.env` at import
   time and must match `HET_CLIENT_SECRET` in `bruno/.env`.
+- OpenAPI: each HTTP service has springdoc and a `config/OpenApiConfig` whose
+  server is the relative URL `/`, so "Try it out" goes through whichever host
+  served the page. The gateway serves Swagger UI at `/swagger-ui.html` and proxies
+  each service's docs at `/aggregate/<service>-service/v3/api-docs` (a
+  `<service>ServiceApiDocsRoute` bean plus an entry in `springdoc.swagger-ui.urls`).
+  Those paths are listed in `security.excluded.urls`.
 - Don't name the filter chain bean `springSecurityFilterChain`: that name makes
   Boot skip `@EnableWebSecurity`, and startup fails with no `HttpSecurity` bean.
 

@@ -59,4 +59,19 @@ keycloak:
 
 security:
   excluded:
-    urls: /actuator/**
+    urls: /actuator/**,/swagger-ui.html,/swagger-ui/**,/v3/api-docs/**,/aggregate/**
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: User Service
+        url: /aggregate/user-service/v3/api-docs
+      - name: Device Service
+        url: /aggregate/device-service/v3/api-docs
+      - name: Ingestion Service
+        url: /aggregate/ingestion-service/v3/api-docs
+      - name: Usage Service
+        url: /aggregate/usage-service/v3/api-docs
+      - name: Insight Service
+        url: /aggregate/insight-service/v3/api-docs
