@@ -30,6 +30,9 @@ public class UsageService {
     // The check runs every 10 seconds over a 1 hour window, so without a cooldown a user
     // above the threshold would be alerted on every run
     static final Duration ALERT_COOLDOWN = AGGREGATION_WINDOW;
+    // A device rarely changes owner, so its userId is reused for a while instead of calling
+    // device-service for every device on every run
+    static final Duration DEVICE_OWNER_TTL = Duration.ofMinutes(10);
 
     private final EnergyUsageRepository energyUsageRepository;
     private final DeviceClient deviceClient;
@@ -38,6 +41,10 @@ public class UsageService {
     private final Clock clock;
     // In memory, so a restart may send one extra alert per user
     private final Map<Long, Instant> lastAlertByUser = new ConcurrentHashMap<>();
+    private final Map<Long, CachedOwner> ownerByDevice = new ConcurrentHashMap<>();
+
+    private record CachedOwner(Long userId, Instant expiresAt) {
+    }
 
     public UsageService(EnergyUsageRepository energyUsageRepository,
                         DeviceClient deviceClient,
@@ -66,8 +73,7 @@ public class UsageService {
     private Map<Long, Double> sumEnergyByUser(List<DeviceEnergy> deviceEnergies) {
         Map<Long, Double> energyByUser = new HashMap<>();
         for (DeviceEnergy deviceEnergy : deviceEnergies) {
-            findDevice(deviceEnergy.deviceId())
-                    .map(DeviceDto::userId)
+            findDeviceOwner(deviceEnergy.deviceId())
                     .ifPresent(userId -> energyByUser.merge(userId, deviceEnergy.energyConsumed(), Double::sum));
         }
         return energyByUser;
@@ -103,6 +109,21 @@ public class UsageService {
                 .build();
         kafkaTemplate.send(ALERTS_TOPIC, alertingEvent);
         lastAlertByUser.put(userId, now);
+    }
+
+    // Unknown devices and failed lookups are not cached, so they are retried on the next run
+    private Optional<Long> findDeviceOwner(Long deviceId) {
+        Instant now = clock.instant();
+        CachedOwner cached = ownerByDevice.get(deviceId);
+        if (cached != null && now.isBefore(cached.expiresAt())) {
+            return Optional.of(cached.userId());
+        }
+
+        Optional<Long> owner = findDevice(deviceId).map(DeviceDto::userId);
+        owner.ifPresentOrElse(
+                userId -> ownerByDevice.put(deviceId, new CachedOwner(userId, now.plus(DEVICE_OWNER_TTL))),
+                () -> ownerByDevice.remove(deviceId));
+        return owner;
     }
 
     // A failing lookup skips that device or user instead of aborting the whole cycle
