@@ -169,6 +169,47 @@ class UsageServiceTest {
     }
 
     @Test
+    void reusesTheDeviceOwnerAcrossRunsInsteadOfCallingDeviceServiceEveryTime() {
+        givenDeviceEnergies(new DeviceEnergy(1L, 40.0));
+        givenDevice(1L, 10L);
+        givenUser(10L, true, 100.0);
+
+        usageService.checkEnergyThresholds();
+        clock.advance(Duration.ofSeconds(10));
+        usageService.checkEnergyThresholds();
+
+        verify(deviceClient, times(1)).findById(1L);
+    }
+
+    @Test
+    void looksTheDeviceOwnerUpAgainOnceTheCacheExpires() {
+        givenDeviceEnergies(new DeviceEnergy(1L, 40.0));
+        givenDevice(1L, 10L);
+        givenUser(10L, true, 100.0);
+
+        usageService.checkEnergyThresholds();
+        clock.advance(UsageService.DEVICE_OWNER_TTL);
+        usageService.checkEnergyThresholds();
+
+        verify(deviceClient, times(2)).findById(1L);
+    }
+
+    @Test
+    void retriesADeviceWhoseLookupFailedOnTheNextRun() {
+        givenDeviceEnergies(new DeviceEnergy(1L, 150.0));
+        when(deviceClient.findById(1L))
+                .thenThrow(new ResourceAccessException("connection refused"))
+                .thenReturn(Optional.of(DeviceDto.builder().id(1L).userId(10L).build()));
+        givenUser(10L, true, 100.0);
+
+        usageService.checkEnergyThresholds();
+        clock.advance(Duration.ofSeconds(10));
+        usageService.checkEnergyThresholds();
+
+        verify(kafkaTemplate, times(1)).send(eq(UsageService.ALERTS_TOPIC), any(AlertingEvent.class));
+    }
+
+    @Test
     void returnsAnEmptyDeviceListWhenTheUserHasNoDevices() {
         when(deviceClient.getAllDevicesForUser(10L)).thenReturn(List.of());
 
