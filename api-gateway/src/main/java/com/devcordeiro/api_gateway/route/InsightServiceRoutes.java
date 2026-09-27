@@ -10,6 +10,7 @@ import org.springframework.web.servlet.function.ServerResponse;
 
 import java.net.URI;
 
+import static org.springframework.cloud.gateway.server.mvc.filter.BeforeFilterFunctions.setPath;
 import static org.springframework.cloud.gateway.server.mvc.filter.BeforeFilterFunctions.uri;
 import static org.springframework.cloud.gateway.server.mvc.handler.GatewayRouterFunctions.route;
 import static org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions.http;
@@ -35,6 +36,15 @@ public class InsightServiceRoutes {
                 .route(RequestPredicates.path("/fallback/insight"),
                         request -> ServerResponse.status(HttpStatus.SERVICE_UNAVAILABLE)
                                 .body("Insight service is down"))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> insightServiceApiDocsRoute() {
+        return route("insight-service-api-docs")
+                .route(RequestPredicates.path("/aggregate/insight-service/v3/api-docs"), http())
+                .before(uri("http://localhost:8086"))
+                .before(setPath("/v3/api-docs"))
                 .build();
     }
 }

@@ -10,6 +10,7 @@ import org.springframework.web.servlet.function.ServerResponse;
 
 import java.net.URI;
 
+import static org.springframework.cloud.gateway.server.mvc.filter.BeforeFilterFunctions.setPath;
 import static org.springframework.cloud.gateway.server.mvc.filter.BeforeFilterFunctions.uri;
 import static org.springframework.cloud.gateway.server.mvc.handler.GatewayRouterFunctions.route;
 import static org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions.http;
@@ -35,6 +36,15 @@ public class DeviceServiceRoutes {
                 .route(RequestPredicates.path("/fallback/device"),
                         request -> ServerResponse.status(HttpStatus.SERVICE_UNAVAILABLE)
                                 .body("Device service is down"))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> deviceServiceApiDocsRoute() {
+        return route("device-service-api-docs")
+                .route(RequestPredicates.path("/aggregate/device-service/v3/api-docs"), http())
+                .before(uri("http://localhost:8082"))
+                .before(setPath("/v3/api-docs"))
                 .build();
     }
 }
