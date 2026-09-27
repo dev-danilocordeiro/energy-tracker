@@ -23,7 +23,7 @@ public class EmailService {
     }
 
     public void sendEmail(String to, String subject, String body, Long userId) {
-        log.info("Sending email to {}, subject {}", to, subject);
+        log.info("Sending alert email to user {}", userId);
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);
@@ -43,7 +43,7 @@ public class EmailService {
             alertRepository.saveAndFlush(alertSent);
 
         } catch (MailException e) {
-            log.error("Error while sending email to {}, subject {}", to, subject, e);
+            log.error("Error while sending alert email to user {}", userId, e);
             final Alert alertSent = Alert.builder()
                     .sent(false)
                     .createdAt(LocalDateTime.now())
@@ -52,7 +52,7 @@ public class EmailService {
             alertRepository.saveAndFlush(alertSent);
             return;
         }
-        log.info("Email sent to {}, subject {}", to, subject);
+        log.info("Alert email sent to user {}", userId);
 
     }
 }
