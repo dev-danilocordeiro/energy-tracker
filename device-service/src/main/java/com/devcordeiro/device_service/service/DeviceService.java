@@ -6,6 +6,8 @@ import com.devcordeiro.device_service.exception.DeviceNotFoundException;
 import com.devcordeiro.device_service.repository.DeviceRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class DeviceService {
 
@@ -19,6 +21,12 @@ public class DeviceService {
                 .orElseThrow(() -> new DeviceNotFoundException("Device not found with id " + id));
 
         return mapToDto(device);
+    }
+
+    public List<DeviceDto> getAllDevicesByUserId(Long userId) {
+        return deviceRepository.findAllByUserId(userId).stream()
+                .map(this::mapToDto)
+                .toList();
     }
 
     public DeviceDto createDevice(DeviceDto deviceDto) {

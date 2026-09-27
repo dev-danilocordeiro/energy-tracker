@@ -1,5 +1,4 @@
-package com.devcordeiro.usage_service.dto;
-
+package com.devcordeiro.insight_service.dto;
 
 import lombok.Builder;
 
@@ -9,7 +8,6 @@ public record DeviceDto(
         String name,
         String type,
         String location,
-        Long userId,
-        Double energyConsumed
+        double energyConsumed
 ) {
 }

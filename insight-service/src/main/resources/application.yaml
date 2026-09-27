@@ -1,0 +1,17 @@
+server:
+  port: 8086
+spring:
+  application:
+    name: insight-service
+  ai:
+    ollama:
+      init:
+        pull-model-strategy: NEVER
+      chat:
+        model: llama3.2
+      base-url: http://localhost:11434
+
+
+usage:
+  service:
+    url: http://localhost:8084/api/v1/usage

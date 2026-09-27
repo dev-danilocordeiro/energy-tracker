@@ -10,7 +10,9 @@ import com.influxdb.query.FluxRecord;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Repository
 public class EnergyUsageRepository {
@@ -37,14 +39,29 @@ public class EnergyUsageRepository {
     }
 
     public List<DeviceEnergy> sumEnergyByDevice(Instant start, Instant stop) {
+        return sumEnergy(start, stop, "true");
+    }
+
+    public List<DeviceEnergy> sumEnergyForDevices(Collection<Long> deviceIds, Instant start, Instant stop) {
+        if (deviceIds.isEmpty()) {
+            return List.of();
+        }
+        String deviceFilter = deviceIds.stream()
+                .map(deviceId -> "r[\"%s\"] == \"%d\"".formatted(DEVICE_ID_TAG, deviceId))
+                .collect(Collectors.joining(" or "));
+        return sumEnergy(start, stop, deviceFilter);
+    }
+
+    private List<DeviceEnergy> sumEnergy(Instant start, Instant stop, String recordFilter) {
         String fluxQuery = """
                 from(bucket: "%s")
                 |> range(start: time(v: "%s"), stop: time(v: "%s"))
                 |> filter(fn: (r) => r["_measurement"] == "%s")
                 |> filter(fn: (r) => r["_field"] == "%s")
+                |> filter(fn: (r) => %s)
                 |> group(columns: ["%s"])
                 |> sum(column: "_value")
-                """.formatted(influxProperties.bucket(), start, stop, MEASUREMENT, ENERGY_FIELD, DEVICE_ID_TAG);
+                """.formatted(influxProperties.bucket(), start, stop, MEASUREMENT, ENERGY_FIELD, recordFilter, DEVICE_ID_TAG);
 
         return influxClient.getQueryApi().query(fluxQuery, influxProperties.org()).stream()
                 .flatMap(table -> table.getRecords().stream())
