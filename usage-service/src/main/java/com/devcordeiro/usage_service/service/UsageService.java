@@ -4,9 +4,12 @@ import com.devcordeiro.kafka.event.AlertingEvent;
 import com.devcordeiro.usage_service.client.DeviceClient;
 import com.devcordeiro.usage_service.client.UserClient;
 import com.devcordeiro.usage_service.dto.DeviceDto;
+import com.devcordeiro.usage_service.dto.UsageDto;
 import com.devcordeiro.usage_service.dto.UserDto;
+import com.devcordeiro.usage_service.model.Device;
 import com.devcordeiro.usage_service.model.DeviceEnergy;
 import com.devcordeiro.usage_service.repository.EnergyUsageRepository;
+import com.influxdb.exceptions.InfluxException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -15,10 +18,7 @@ import org.springframework.web.client.RestClientException;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -109,5 +109,72 @@ public class UsageService {
             log.warn("Could not fetch user {}: {}", userId, e.getMessage());
             return Optional.empty();
         }
+    }
+
+    public UsageDto getXDaysUsageForUser(Long userId, int days) {
+        log.info("Getting usage for userId {} over past {} days", userId, days);
+        final List<DeviceDto> devicesDto = deviceClient.getAllDevicesForUser(userId);
+
+        final List<Device> devices = new ArrayList<>();
+        for (DeviceDto deviceDto : devicesDto) {
+            devices.add(Device.builder()
+                    .id(deviceDto.id())
+                    .name(deviceDto.name())
+                    .type(deviceDto.type())
+                    .location(deviceDto.location())
+                    .userId(deviceDto.userId())
+                    .build());
+        }
+
+        if (devices.isEmpty()) {
+            return UsageDto.builder()
+                    .userId(userId)
+                    .devices(null)
+                    .build();
+        }
+
+        final List<Long> deviceIds = devices.stream()
+                .map(Device::getId)
+                .filter(Objects::nonNull)
+                .toList();
+
+        final Instant now = Instant.now();
+        final Instant start = now.minus(Duration.ofDays(days));
+
+        final Map<Long, Double> aggregatedMap = new HashMap<>();
+        try {
+            for (DeviceEnergy deviceEnergy : energyUsageRepository.sumEnergyForDevices(deviceIds, start, now)) {
+                aggregatedMap.merge(deviceEnergy.deviceId(), deviceEnergy.energyConsumed(), Double::sum);
+            }
+        } catch (InfluxException e) {
+            log.error("Failed to query InfluxDB for user {} usage over {} days: {}", userId, days, e.getMessage());
+            return UsageDto.builder()
+                    .userId(userId)
+                    .devices(null)
+                    .build();
+        }
+
+        for (Device device : devices) {
+            if (device.getId() == null) continue;
+            device.setEnergyConsumed(aggregatedMap.getOrDefault(device.getId(), 0.0));
+        }
+
+        log.info("Aggregated energy consumption for userId {}: {}", userId, aggregatedMap);
+
+        final List<DeviceDto> resultDevices = devices.stream()
+                .map(d -> DeviceDto.builder()
+                        .id(d.getId())
+                        .name(d.getName())
+                        .type(d.getType())
+                        .location(d.getLocation())
+                        .userId(d.getUserId())
+                        .energyConsumed(d.getEnergyConsumed())
+                        .build())
+                .toList();
+
+        return UsageDto.builder()
+                .userId(userId)
+                .devices(resultDevices)
+                .build();
     }
 }
