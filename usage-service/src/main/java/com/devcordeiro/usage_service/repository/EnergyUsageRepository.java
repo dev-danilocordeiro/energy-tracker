@@ -7,13 +7,16 @@ import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
 import com.influxdb.query.FluxRecord;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Repository
 public class EnergyUsageRepository {
 
@@ -66,12 +69,22 @@ public class EnergyUsageRepository {
         return influxClient.getQueryApi().query(fluxQuery, influxProperties.org()).stream()
                 .flatMap(table -> table.getRecords().stream())
                 .map(this::toDeviceEnergy)
+                .flatMap(Optional::stream)
                 .toList();
     }
 
-    private DeviceEnergy toDeviceEnergy(FluxRecord record) {
-        Long deviceId = Long.valueOf((String) record.getValueByKey(DEVICE_ID_TAG));
+    // A reading with a malformed deviceId tag (such as "null" from an unvalidated request) is skipped,
+    // otherwise it would fail every query whose range includes it
+    private Optional<DeviceEnergy> toDeviceEnergy(FluxRecord record) {
+        Object deviceIdTag = record.getValueByKey(DEVICE_ID_TAG);
+        long deviceId;
+        try {
+            deviceId = Long.parseLong(String.valueOf(deviceIdTag));
+        } catch (NumberFormatException e) {
+            log.warn("Skipping energy usage with invalid deviceId tag: {}", deviceIdTag);
+            return Optional.empty();
+        }
         double energyConsumed = record.getValue() instanceof Number value ? value.doubleValue() : 0.0;
-        return new DeviceEnergy(deviceId, energyConsumed);
+        return Optional.of(new DeviceEnergy(deviceId, energyConsumed));
     }
 }
