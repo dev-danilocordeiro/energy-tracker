@@ -4,47 +4,33 @@ import com.devcordeiro.ingestion_service.dto.EnergyUsageDto;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Random;
+import java.time.Instant;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 @Component
-public class ParallelDataSimulator implements CommandLineRunner {
+public class ParallelDataSimulator {
 
-    @Value("${simulation.parallel-threads}")
-    private int parallelThreads;
-
-    @Value("${simulation.requests-per-interval}")
-    private int requestsPerInterval;
-
-    @Value("${simulation.endpoint}")
-    private String ingestionEndpoint;
-
+    private final int parallelThreads;
+    private final int requestsPerInterval;
     private final ExecutorService executorService;
-    private final RestTemplate restTemplate = new RestTemplate();
-    private final Random random = new Random();
+    private final RestClient restClient;
 
-    public ParallelDataSimulator() {
-        this.executorService = Executors.newCachedThreadPool();
-    }
-
-    @Override
-	public void run(String... args) throws Exception {
-        log.info("ParallelDataSimulator started...");
-
-        ((ThreadPoolExecutor)executorService).setCorePoolSize(parallelThreads);
+    public ParallelDataSimulator(@Value("${simulation.parallel-threads}") int parallelThreads,
+                                 @Value("${simulation.requests-per-interval}") int requestsPerInterval,
+                                 @Value("${simulation.endpoint}") String ingestionEndpoint) {
+        this.parallelThreads = parallelThreads;
+        this.requestsPerInterval = requestsPerInterval;
+        this.executorService = Executors.newFixedThreadPool(parallelThreads);
+        this.restClient = RestClient.create(ingestionEndpoint);
+        log.info("ParallelDataSimulator started with {} threads", parallelThreads);
     }
 
     @Scheduled(fixedRateString = "${simulation.interval-ms}")
@@ -56,25 +42,30 @@ public class ParallelDataSimulator implements CommandLineRunner {
             int requestsForThread = batchSize + (i < remainder ? 1 : 0);
             executorService.submit(() -> {
                 for (int j = 0; j < requestsForThread; j++) {
-                    EnergyUsageDto energyUsageDto = EnergyUsageDto.builder()
-                            .deviceId(random.nextLong(1, 6))
-                            .energyConsumed(Math.round(random.nextDouble(0.0, 2.0) * 100.0) / 100.0)
-                            .timestamp(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant())
-                            .build();
-
-                    try {
-                        HttpHeaders headers = new HttpHeaders();
-                        headers.setContentType(MediaType.APPLICATION_JSON);
-
-                        HttpEntity<EnergyUsageDto> req = new HttpEntity<>(energyUsageDto, headers);
-                        restTemplate.postForEntity(ingestionEndpoint, req, Void.class);
-
-                        log.info("Sent energy usage request {}", energyUsageDto);
-                    } catch (Exception e) {
-                        log.error("Error while sending energy usage request {}, error: {}", energyUsageDto, e.getMessage());
-                    }
+                    sendReading();
                 }
             });
+        }
+    }
+
+    private void sendReading() {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        EnergyUsageDto energyUsageDto = EnergyUsageDto.builder()
+                .deviceId(random.nextLong(1, 6))
+                .energyConsumed(Math.round(random.nextDouble(0.0, 2.0) * 100.0) / 100.0)
+                .timestamp(Instant.now())
+                .build();
+
+        try {
+            restClient.post()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(energyUsageDto)
+                    .retrieve()
+                    .toBodilessEntity();
+
+            log.debug("Sent energy usage request {}", energyUsageDto);
+        } catch (Exception e) {
+            log.error("Error while sending energy usage request {}, error: {}", energyUsageDto, e.getMessage());
         }
     }
 

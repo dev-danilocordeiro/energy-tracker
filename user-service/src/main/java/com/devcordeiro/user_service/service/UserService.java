@@ -3,7 +3,7 @@ package com.devcordeiro.user_service.service;
 import com.devcordeiro.user_service.dto.UserDto;
 import com.devcordeiro.user_service.entity.User;
 import com.devcordeiro.user_service.exception.UserNotFoundException;
-import com.devcordeiro.user_service.repository.UserRespository;
+import com.devcordeiro.user_service.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -11,10 +11,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class UserService {
 
-    private final UserRespository userRespository;
+    private final UserRepository userRepository;
 
-    public UserService(UserRespository userRespository) {
-        this.userRespository = userRespository;
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
     public UserDto createUser(UserDto input) {
         final User createdUser = User.builder()
@@ -25,18 +25,18 @@ public class UserService {
                 .alerting(input.alerting())
                 .energyAlertingThreshold(input.energyAlertingThreshold())
                 .build();
-        final User saved = userRespository.save(createdUser);
+        final User saved = userRepository.save(createdUser);
         return toDto(saved);
     }
 
     public UserDto getUserById(Long id) {
-        return userRespository.findById(id)
+        return userRepository.findById(id)
                 .map(this::toDto)
                 .orElseThrow(() -> new UserNotFoundException("User not found with id " + id));
     }
 
     public void updateUser(Long id, UserDto dto) {
-        User user = userRespository.findById(id)
+        User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found with id " + id));
 
         user.setName(dto.name());
@@ -45,13 +45,13 @@ public class UserService {
         user.setAddress(dto.address());
         user.setAlerting(dto.alerting());
         user.setEnergyAlertingThreshold(dto.energyAlertingThreshold());
-        userRespository.save(user);
+        userRepository.save(user);
     }
 
     public void deleteUser(Long id) {
-        User user = userRespository.findById(id)
+        User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found with id " + id));
-        userRespository.delete(user);
+        userRepository.delete(user);
     }
 
     private UserDto toDto(User user) {
