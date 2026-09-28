@@ -31,7 +31,7 @@ Flow: `ingestion -> [energy-usage] -> usage -> [energy-alerts] -> alert`.
 
 ```bash
 docker compose up -d                  # MySQL, Kafka, Kafka UI, InfluxDB, Mailpit, Keycloak,
-                                      # Prometheus, Grafana
+                                      # Prometheus, Grafana, Tempo, Loki
 cp .env.example .env                  # first time only
 
 cd <module> && ./mvnw verify          # build + tests for one module
@@ -48,6 +48,21 @@ cd <module> && ./mvnw spring-boot:run
   `docker/grafana/provisioning`. A new app needs actuator +
   `micrometer-registry-prometheus`, `prometheus` in the exposed endpoints, the
   `management.metrics.tags.application` tag and a scrape job.
+- Tracing and logs: every app has `spring-boot-starter-opentelemetry` and exports
+  spans to Tempo (`localhost:4318`, UI through Grafana) and logs to Loki's native
+  OTLP endpoint (`localhost:3100/otlp/v1/logs`). No collector in between. OTLP
+  metrics export is disabled; metrics stay on Prometheus. Sampling is 100% locally
+  (`TRACING_SAMPLING_PROBABILITY`).
+- Logs reach Loki through the Logback appender in `logback-spring.xml`, which
+  `config/OpenTelemetryConfig` hands the SDK at startup. Boot does not wire it.
+  `opentelemetry-logback-appender-1.0` is not managed by Boot: keep its version on
+  the line built against the OpenTelemetry SDK that Boot ships (1.62 -> 2.28.x).
+- Trace propagation only works through Boot's `RestClient.Builder` (from
+  `spring-boot-starter-restclient`). `RestClient.create(...)` is not instrumented and
+  breaks the trace. Kafka needs `observation-enabled: true` on the template (producer)
+  and the listener (consumer) to carry `traceparent` in the record headers.
+- `http.server.requests` histograms are on: they back the p95 panel and carry the
+  trace exemplars Prometheus stores (`--enable-feature=exemplar-storage`).
 - Ollama is not in compose. insight-service expects it at `localhost:11434`.
 - Keycloak: `http://localhost:8091`, admin `admin`/`admin` (created only on the
   first start, when its Postgres volume is empty).
