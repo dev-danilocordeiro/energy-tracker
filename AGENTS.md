@@ -31,7 +31,7 @@ Flow: `ingestion -> [energy-usage] -> usage -> [energy-alerts] -> alert`.
 
 ```bash
 docker compose up -d                  # MySQL, Kafka, Kafka UI, InfluxDB, Mailpit, Keycloak,
-                                      # Prometheus, Grafana, Tempo, Loki
+                                      # Prometheus, Grafana, Tempo, Loki, Redis
 cp .env.example .env                  # first time only
 
 cd <module> && ./mvnw verify          # build + tests for one module
@@ -70,6 +70,15 @@ load-tests/run.sh smoke               # k6 load test (smoke, load, stress, spike
   (`--web.enable-remote-write-receiver`); Grafana dashboard "k6 Load Tests". See
   `load-tests/README.md`. When you add an endpoint worth load testing, add it to
   `lib/api.js` and the weighted mix in `lib/traffic.js`.
+- Cache: insight-service keeps Ollama answers in Redis (`localhost:6379`) for
+  `INSIGHT_CACHE_TTL` (1h), per user, in `insight:saving-tips::<userId>` and
+  `insight:overview::<userId>`. It goes through `service/InsightCache`, not
+  `@Cacheable`: with Spring Data Redis, `sync = true` doesn't give per-key locking, so
+  concurrent misses would each call Ollama. `InsightCache` makes them wait for one call,
+  and falls back to Ollama if Redis fails (500ms timeouts). Users without devices are
+  answered before the cache and never cached. CRUD endpoints are not cached: the k6
+  baseline has them at 7-23ms p95, so there is little to gain and invalidation to
+  get wrong.
 - ingestion-service's `ParallelDataSimulator` posts ~200 readings/s. Turn it off with
   `SIMULATION_ENABLED=false` for load tests and for anything where its traffic is noise.
 - Ollama is not in compose. insight-service expects it at `localhost:11434`.
