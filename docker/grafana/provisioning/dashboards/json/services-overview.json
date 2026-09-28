@@ -266,7 +266,8 @@
           },
           "refId": "A",
           "expr": "sum by (job) (rate(http_server_requests_seconds_count{job=~\"$job\", uri!~\"/actuator.*\"}[$__rate_interval]))",
-          "legendFormat": "{{job}}"
+          "legendFormat": "{{job}}",
+          "exemplar": false
         }
       ],
       "description": "Actuator endpoints (including Prometheus scrapes) are excluded."
@@ -322,14 +323,15 @@
           },
           "refId": "A",
           "expr": "sum by (job) (rate(http_server_requests_seconds_count{job=~\"$job\", uri!~\"/actuator.*\", status=~\"5..\"}[$__rate_interval])) / sum by (job) (rate(http_server_requests_seconds_count{job=~\"$job\", uri!~\"/actuator.*\"}[$__rate_interval]))",
-          "legendFormat": "{{job}}"
+          "legendFormat": "{{job}}",
+          "exemplar": false
         }
       ]
     },
     {
       "type": "timeseries",
       "id": 7,
-      "title": "Average latency",
+      "title": "p95 latency",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -376,11 +378,12 @@
             "uid": "prometheus"
           },
           "refId": "A",
-          "expr": "sum by (job) (rate(http_server_requests_seconds_sum{job=~\"$job\", uri!~\"/actuator.*\"}[$__rate_interval])) / sum by (job) (rate(http_server_requests_seconds_count{job=~\"$job\", uri!~\"/actuator.*\"}[$__rate_interval]))",
-          "legendFormat": "{{job}}"
+          "expr": "histogram_quantile(0.95, sum by (job, le) (rate(http_server_requests_seconds_bucket{job=~\"$job\", uri!~\"/actuator.*\"}[$__rate_interval])))",
+          "legendFormat": "{{job}}",
+          "exemplar": true
         }
       ],
-      "description": "Mean latency. Percentiles need management.metrics.distribution.percentiles-histogram.http.server.requests=true."
+      "description": "The dots are exemplars: sampled requests carrying their trace id. Click one to open the trace in Tempo."
     },
     {
       "type": "timeseries",
@@ -433,7 +436,8 @@
           },
           "refId": "A",
           "expr": "max by (job, method, uri) (http_server_requests_seconds_max{job=~\"$job\", uri!~\"/actuator.*\"})",
-          "legendFormat": "{{job}} {{method}} {{uri}}"
+          "legendFormat": "{{job}} {{method}} {{uri}}",
+          "exemplar": false
         }
       ]
     },
@@ -488,7 +492,8 @@
           },
           "refId": "A",
           "expr": "sum by (status) (rate(http_server_requests_seconds_count{job=~\"$job\", uri!~\"/actuator.*\"}[$__rate_interval]))",
-          "legendFormat": "{{status}}"
+          "legendFormat": "{{status}}",
+          "exemplar": false
         }
       ]
     },
@@ -543,7 +548,8 @@
           },
           "refId": "A",
           "expr": "topk(10, sum by (job, method, uri) (rate(http_server_requests_seconds_count{job=~\"$job\", uri!~\"/actuator.*\"}[$__rate_interval])))",
-          "legendFormat": "{{job}} {{method}} {{uri}}"
+          "legendFormat": "{{job}} {{method}} {{uri}}",
+          "exemplar": false
         }
       ]
     },
@@ -611,7 +617,8 @@
           },
           "refId": "A",
           "expr": "sum by (job) (jvm_memory_used_bytes{job=~\"$job\", area=\"heap\"})",
-          "legendFormat": "{{job}}"
+          "legendFormat": "{{job}}",
+          "exemplar": false
         }
       ]
     },
@@ -666,7 +673,8 @@
           },
           "refId": "A",
           "expr": "sum by (job) (jvm_memory_used_bytes{job=~\"$job\", area=\"nonheap\"})",
-          "legendFormat": "{{job}}"
+          "legendFormat": "{{job}}",
+          "exemplar": false
         }
       ]
     },
@@ -721,7 +729,8 @@
           },
           "refId": "A",
           "expr": "process_cpu_usage{job=~\"$job\"}",
-          "legendFormat": "{{job}}"
+          "legendFormat": "{{job}}",
+          "exemplar": false
         }
       ]
     },
@@ -776,7 +785,8 @@
           },
           "refId": "A",
           "expr": "jvm_threads_live_threads{job=~\"$job\"}",
-          "legendFormat": "{{job}}"
+          "legendFormat": "{{job}}",
+          "exemplar": false
         }
       ]
     },
@@ -831,7 +841,8 @@
           },
           "refId": "A",
           "expr": "sum by (job) (rate(jvm_gc_pause_seconds_sum{job=~\"$job\"}[$__rate_interval]))",
-          "legendFormat": "{{job}}"
+          "legendFormat": "{{job}}",
+          "exemplar": false
         }
       ],
       "description": "Fraction of each second spent in GC pauses."
@@ -887,7 +898,8 @@
           },
           "refId": "A",
           "expr": "jvm_classes_loaded_classes{job=~\"$job\"}",
-          "legendFormat": "{{job}}"
+          "legendFormat": "{{job}}",
+          "exemplar": false
         }
       ]
     },
@@ -955,7 +967,8 @@
           },
           "refId": "A",
           "expr": "sum by (job) (hikaricp_connections_active{job=~\"$job\"})",
-          "legendFormat": "{{job}}"
+          "legendFormat": "{{job}}",
+          "exemplar": false
         }
       ]
     },
@@ -1010,7 +1023,8 @@
           },
           "refId": "A",
           "expr": "sum by (job) (hikaricp_connections_pending{job=~\"$job\"})",
-          "legendFormat": "{{job}}"
+          "legendFormat": "{{job}}",
+          "exemplar": false
         }
       ],
       "description": "Threads waiting for a connection. Anything above zero for long means the pool is too small."
@@ -1066,7 +1080,8 @@
           },
           "refId": "A",
           "expr": "sum by (job) (rate(hikaricp_connections_acquire_seconds_sum{job=~\"$job\"}[$__rate_interval])) / sum by (job) (rate(hikaricp_connections_acquire_seconds_count{job=~\"$job\"}[$__rate_interval]))",
-          "legendFormat": "{{job}}"
+          "legendFormat": "{{job}}",
+          "exemplar": false
         }
       ]
     }
