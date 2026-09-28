@@ -1,0 +1,37 @@
+meta {
+  name: Headers de rate limit
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{gatewayBaseUrl}}/api/v1/user/{{userId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("informa o limite da politica default", function() {
+    expect(res.getHeader("x-ratelimit-limit")).to.equal("100");
+  });
+
+  test("informa quantas requisicoes ainda cabem no bucket", function() {
+    const remaining = Number(res.getHeader("x-ratelimit-remaining"));
+    expect(remaining).to.be.within(0, 99);
+  });
+}
+
+docs {
+  O gateway limita as requisicoes por cliente (o "sub" do JWT), com buckets no
+  Redis compartilhados entre as instancias. Politica default (user, device,
+  ingestion, usage): rajadas de ate 100 e 50 req/s sustentadas. Insight: 10 por
+  minuto, porque cada miss do cache e uma chamada ao Ollama.
+
+  Toda resposta limitada traz X-RateLimit-Limit e X-RateLimit-Remaining. Ao
+  estourar, o gateway responde 429 com ProblemDetail (type .../rate-limited) e
+  Retry-After em segundos, sem repassar a requisicao ao servico.
+
+  O status aqui nao importa (depois de "Delete user" vira 404): os headers vem
+  do gateway, antes do servico. Para ver o 429, rode "Get saving tips" mais de
+  10 vezes em um minuto.
+}
