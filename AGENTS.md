@@ -36,6 +36,7 @@ cp .env.example .env                  # first time only
 
 cd <module> && ./mvnw verify          # build + tests for one module
 cd <module> && ./mvnw spring-boot:run
+load-tests/run.sh smoke               # k6 load test (smoke, load, stress, spike)
 ```
 
 - There is no root build. Run commands inside the module you changed, and run them
@@ -63,6 +64,14 @@ cd <module> && ./mvnw spring-boot:run
   and the listener (consumer) to carry `traceparent` in the record headers.
 - `http.server.requests` histograms are on: they back the p95 panel and carry the
   trace exemplars Prometheus stores (`--enable-feature=exemplar-storage`).
+- Load tests: k6 scenarios in `load-tests/` (smoke, load, stress, spike), run with
+  `load-tests/run.sh <scenario>` through the `k6` compose service (profile
+  `load-test`, host networking). k6 pushes metrics to Prometheus by remote write
+  (`--web.enable-remote-write-receiver`); Grafana dashboard "k6 Load Tests". See
+  `load-tests/README.md`. When you add an endpoint worth load testing, add it to
+  `lib/api.js` and the weighted mix in `lib/traffic.js`.
+- ingestion-service's `ParallelDataSimulator` posts ~200 readings/s. Turn it off with
+  `SIMULATION_ENABLED=false` for load tests and for anything where its traffic is noise.
 - Ollama is not in compose. insight-service expects it at `localhost:11434`.
 - Keycloak: `http://localhost:8091`, admin `admin`/`admin` (created only on the
   first start, when its Postgres volume is empty).
