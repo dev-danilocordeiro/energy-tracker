@@ -1,5 +1,6 @@
 package com.devcordeiro.api_gateway.route;
 
+import com.devcordeiro.api_gateway.ratelimit.RateLimiting;
 import org.springframework.cloud.gateway.server.mvc.filter.CircuitBreakerFilterFunctions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,10 +20,12 @@ import static org.springframework.cloud.gateway.server.mvc.handler.HandlerFuncti
 public class IngestionServiceRoutes {
 
     @Bean
-    public RouterFunction<ServerResponse> ingestionRoute() {
+    public RouterFunction<ServerResponse> ingestionRoute(RateLimiting rateLimiting) {
         return route("ingestion-service")
                 .route(RequestPredicates.path("/api/v1/ingestion/**"), http())
                 .before(uri("http://localhost:8083"))
+                // Before the circuit breaker, so rejected requests never count as service failures
+                .filter(rateLimiting.policy("default"))
                 .filter(CircuitBreakerFilterFunctions.circuitBreaker(
                         "ingestionServiceCircuitBreaker",
                         URI.create("forward:/fallback/ingestion")

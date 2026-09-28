@@ -1,5 +1,6 @@
 package com.devcordeiro.api_gateway.route;
 
+import com.devcordeiro.api_gateway.ratelimit.RateLimiting;
 import org.springframework.cloud.gateway.server.mvc.filter.CircuitBreakerFilterFunctions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,10 +20,12 @@ import static org.springframework.cloud.gateway.server.mvc.handler.HandlerFuncti
 public class InsightServiceRoutes {
 
     @Bean
-    public RouterFunction<ServerResponse> insightRoute() {
+    public RouterFunction<ServerResponse> insightRoute(RateLimiting rateLimiting) {
         return route("insight-service")
                 .route(RequestPredicates.path("/api/v1/insight/**"), http())
                 .before(uri("http://localhost:8086"))
+                // Before the circuit breaker, so rejected requests never count as service failures
+                .filter(rateLimiting.policy("insight"))
                 .filter(CircuitBreakerFilterFunctions.circuitBreaker(
                         "insightServiceCircuitBreaker",
                         URI.create("forward:/fallback/insight")

@@ -1,5 +1,6 @@
 package com.devcordeiro.api_gateway.route;
 
+import com.devcordeiro.api_gateway.ratelimit.RateLimiting;
 import org.springframework.cloud.gateway.server.mvc.filter.CircuitBreakerFilterFunctions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,10 +20,12 @@ import static org.springframework.cloud.gateway.server.mvc.handler.HandlerFuncti
 public class UserServiceRoutes {
 
     @Bean
-    public RouterFunction<ServerResponse> userRoute() {
+    public RouterFunction<ServerResponse> userRoute(RateLimiting rateLimiting) {
         return route("user-service")
                 .route(RequestPredicates.path("/api/v1/user/**"), http())
                 .before(uri("http://localhost:8081"))
+                // Before the circuit breaker, so rejected requests never count as service failures
+                .filter(rateLimiting.policy("default"))
                 .filter(CircuitBreakerFilterFunctions.circuitBreaker(
                         "userServiceCircuitBreaker",
                         URI.create("forward:/fallback/user")
