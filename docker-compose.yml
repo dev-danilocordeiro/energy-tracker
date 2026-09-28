@@ -186,6 +186,21 @@ services:
       retries: 20
       start_period: 10s
 
+  # Cache for insight-service's Ollama answers
+  redis:
+    image: redis:8.8.0-alpine
+    container_name: energy-tracker-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   # The apps export spans over OTLP straight to Tempo (no collector in between)
   tempo:
     image: grafana/tempo:2.10.1
@@ -270,3 +285,4 @@ volumes:
   grafana-data:
   tempo-data:
   loki-data:
+  redis-data:

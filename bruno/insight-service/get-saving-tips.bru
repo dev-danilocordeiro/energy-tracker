@@ -16,6 +16,10 @@ docs {
   um usuario com dispositivos cadastrados ("Create device" antes desta).
 
   A resposta do modelo pode levar dezenas de segundos.
+
+  A resposta fica no cache (Redis) por 1h por usuario: a primeira chamada vai ao
+  Ollama, as seguintes voltam em milissegundos. Para forcar uma resposta nova:
+  docker exec energy-tracker-redis redis-cli del insight:saving-tips::<userId>
 }
 
 tests {

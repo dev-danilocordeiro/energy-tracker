@@ -1,6 +1,7 @@
 package com.devcordeiro.insight_service.service;
 
 import com.devcordeiro.insight_service.client.UsageClient;
+import com.devcordeiro.insight_service.config.CacheConfig;
 import com.devcordeiro.insight_service.dto.DeviceDto;
 import com.devcordeiro.insight_service.dto.InsightDto;
 import com.devcordeiro.insight_service.dto.UsageDto;
@@ -20,10 +21,12 @@ public class InsightService {
 
     private final UsageClient usageClient;
     private final ChatClient chatClient;
+    private final InsightCache insightCache;
 
-    public InsightService(UsageClient usageClient, ChatClient chatClient) {
+    public InsightService(UsageClient usageClient, ChatClient chatClient, InsightCache insightCache) {
         this.usageClient = usageClient;
         this.chatClient = chatClient;
+        this.insightCache = insightCache;
     }
 
     public InsightDto getSavingTips(Long userId) {
@@ -38,7 +41,7 @@ public class InsightService {
                 How can I reduce my energy consumption? How does it compare to an average household?
                 """, DAYS, totalUsage);
 
-        return insight(userId, totalUsage, prompt);
+        return insightCache.get(CacheConfig.SAVING_TIPS, userId, () -> insight(userId, totalUsage, prompt));
     }
 
     public InsightDto getOverview(Long userId) {
@@ -59,9 +62,11 @@ public class InsightService {
                 %s
                 """.formatted(DAYS, deviceUsage);
 
-        return insight(userId, totalUsage(devices), prompt);
+        return insightCache.get(CacheConfig.OVERVIEW, userId, () -> insight(userId, totalUsage(devices), prompt));
     }
 
+    // Runs before the cache on purpose: "no devices" answers are cheap and never cached, so
+    // a user who registers a first device gets real tips right away
     private List<DeviceDto> fetchDevices(Long userId) {
         final UsageDto usageData = usageClient.getXDaysUsageForUser(userId, DAYS);
         if (usageData == null || usageData.devices() == null || usageData.devices().isEmpty()) {
