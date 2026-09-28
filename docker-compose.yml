@@ -169,6 +169,8 @@ services:
       # Keeps the trace ids Micrometer attaches to histogram samples, so Grafana can jump
       # from a latency spike straight to a trace in Tempo
       - --enable-feature=exemplar-storage
+      # k6 pushes its metrics here (load-tests/run.sh) instead of being scraped
+      - --web.enable-remote-write-receiver
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     # The apps run on the host; on Linux host.docker.internal only exists with this mapping
@@ -240,6 +242,23 @@ services:
       timeout: 5s
       retries: 20
       start_period: 20s
+
+  # Load tests, run on demand with load-tests/run.sh <scenario>. The profile keeps
+  # `docker compose up` from starting it.
+  k6:
+    image: grafana/k6:2.3.0
+    profiles: [load-test]
+    # The gateway checks the token's issuer (localhost:8091), so k6 must reach Keycloak
+    # and the gateway as localhost, like the apps and Bruno do
+    network_mode: host
+    working_dir: /scripts
+    environment:
+      HET_CLIENT_SECRET: ${HET_CLIENT_SECRET}
+      K6_OUT: experimental-prometheus-rw
+      K6_PROMETHEUS_RW_SERVER_URL: http://localhost:${PROMETHEUS_PORT:-9090}/api/v1/write
+      K6_PROMETHEUS_RW_TREND_STATS: p(95),p(99),avg,max
+    volumes:
+      - ./load-tests:/scripts
 
 volumes:
   mysql-data:
