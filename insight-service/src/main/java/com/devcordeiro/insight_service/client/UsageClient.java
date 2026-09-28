@@ -12,8 +12,9 @@ public class UsageClient {
 
     private final RestClient restClient;
 
-    public UsageClient(@Value("${usage.service.url}") String baseUrl) {
-        this.restClient = RestClient.create(baseUrl);
+    // The Boot-managed builder is instrumented: it opens a client span and sends traceparent
+    public UsageClient(RestClient.Builder restClientBuilder, @Value("${usage.service.url}") String baseUrl) {
+        this.restClient = restClientBuilder.baseUrl(baseUrl).build();
     }
 
     public UsageDto getXDaysUsageForUser(Long userId, int days) {

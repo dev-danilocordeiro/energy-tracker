@@ -15,8 +15,9 @@ public class DeviceClient {
 
     private final RestClient restClient;
 
-    public DeviceClient(@Value("${device.service.url}") String baseUrl) {
-        this.restClient = RestClient.create(baseUrl);
+    // The Boot-managed builder is instrumented: it opens a client span and sends traceparent
+    public DeviceClient(RestClient.Builder restClientBuilder, @Value("${device.service.url}") String baseUrl) {
+        this.restClient = restClientBuilder.baseUrl(baseUrl).build();
     }
 
     public Optional<DeviceDto> findById(Long deviceId) {
