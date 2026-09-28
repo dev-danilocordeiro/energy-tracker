@@ -13,8 +13,9 @@ public class UserClient {
 
     private final RestClient restClient;
 
-    public UserClient(@Value("${user.service.url}") String baseUrl) {
-        this.restClient = RestClient.create(baseUrl);
+    // The Boot-managed builder is instrumented: it opens a client span and sends traceparent
+    public UserClient(RestClient.Builder restClientBuilder, @Value("${user.service.url}") String baseUrl) {
+        this.restClient = restClientBuilder.baseUrl(baseUrl).build();
     }
 
     public Optional<UserDto> findById(Long userId) {

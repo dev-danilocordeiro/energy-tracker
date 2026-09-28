@@ -166,6 +166,9 @@ services:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
       - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-7d}
+      # Keeps the trace ids Micrometer attaches to histogram samples, so Grafana can jump
+      # from a latency spike straight to a trace in Tempo
+      - --enable-feature=exemplar-storage
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     # The apps run on the host; on Linux host.docker.internal only exists with this mapping
@@ -181,6 +184,37 @@ services:
       retries: 20
       start_period: 10s
 
+  # The apps export spans over OTLP straight to Tempo (no collector in between)
+  tempo:
+    image: grafana/tempo:2.10.1
+    container_name: energy-tracker-tempo
+    restart: unless-stopped
+    command:
+      - -config.file=/etc/tempo/tempo.yml
+      - -config.expand-env=true
+    environment:
+      TEMPO_RETENTION: ${TEMPO_RETENTION:-24h}
+    ports:
+      - "${TEMPO_PORT:-3200}:3200"
+      - "${OTLP_HTTP_PORT:-4318}:4318"
+      - "${OTLP_GRPC_PORT:-4317}:4317"
+    volumes:
+      - ./docker/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo-data:/var/tempo
+
+  # The apps export logs over OTLP straight to Loki's native endpoint (/otlp/v1/logs)
+  loki:
+    image: grafana/loki:3.7.8
+    container_name: energy-tracker-loki
+    restart: unless-stopped
+    command:
+      - -config.file=/etc/loki/loki.yml
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+    volumes:
+      - ./docker/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki-data:/loki
+
   grafana:
     image: grafana/grafana:13.2.2
     container_name: energy-tracker-grafana
@@ -188,6 +222,10 @@ services:
     depends_on:
       prometheus:
         condition: service_healthy
+      tempo:
+        condition: service_started
+      loki:
+        condition: service_started
     ports:
       - "${GRAFANA_PORT:-3000}:3000"
     environment:
@@ -211,3 +249,5 @@ volumes:
   keycloak-db-data:
   prometheus-data:
   grafana-data:
+  tempo-data:
+  loki-data:

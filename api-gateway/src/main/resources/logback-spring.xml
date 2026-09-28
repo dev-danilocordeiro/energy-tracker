@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Boot's defaults: console output with [app,traceId,spanId] correlation -->
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+
+    <!-- Ships every log record to Loki over OTLP. Wired to the SDK in config/OpenTelemetryConfig -->
+    <appender name="OTEL" class="io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender">
+        <captureCodeAttributes>true</captureCodeAttributes>
+        <captureKeyValuePairAttributes>true</captureKeyValuePairAttributes>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="OTEL"/>
+    </root>
+</configuration>
