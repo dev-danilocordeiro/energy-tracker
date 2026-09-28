@@ -27,6 +27,27 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
+    # Buckets are what p95/p99 queries need, and where Micrometer attaches trace exemplars
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  # Traces and logs go to Tempo and Loki over OTLP; metrics stay on Prometheus
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+    logging:
+      export:
+        otlp:
+          endpoint: ${OTLP_LOGS_ENDPOINT:http://localhost:3100/otlp/v1/logs}
+  otlp:
+    metrics:
+      export:
+        enabled: false
 
 resilience4j:
   circuitbreaker:

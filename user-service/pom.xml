@@ -90,6 +90,16 @@
 			<artifactId>micrometer-registry-prometheus</artifactId>
 			<scope>runtime</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-opentelemetry</artifactId>
+		</dependency>
+		<dependency>
+			<!-- Not managed by Boot. 2.28.x is the line built against the OpenTelemetry SDK Boot 4.1.1 ships (1.62) -->
+			<groupId>io.opentelemetry.instrumentation</groupId>
+			<artifactId>opentelemetry-logback-appender-1.0</artifactId>
+			<version>2.28.1-alpha</version>
+		</dependency>
 	</dependencies>
 
 	<build>
