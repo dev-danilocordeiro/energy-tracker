@@ -18,6 +18,7 @@ server:
 
 
 simulation:
+  enabled: ${SIMULATION_ENABLED:true}
   endpoint: http://localhost:8083/api/v1/ingestion
   requests-per-interval: 1000
   interval-ms: 5000

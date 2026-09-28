@@ -4,6 +4,7 @@ import com.devcordeiro.ingestion_service.dto.EnergyUsageDto;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 @Component
+// Off for load tests, so its ~200 req/s don't mix with the traffic being measured
+@ConditionalOnProperty(name = "simulation.enabled", havingValue = "true", matchIfMissing = true)
 public class ParallelDataSimulator {
 
     private final int parallelThreads;
