@@ -10,6 +10,22 @@ spring:
       chat:
         model: llama3.2
       base-url: http://localhost:11434
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      # A slow or missing Redis must not hold requests up: InsightCache falls back to Ollama
+      timeout: 500ms
+      connect-timeout: 500ms
+  cache:
+    type: redis
+    redis:
+      enable-statistics: true
+
+insight:
+  cache:
+    # Answers describe the past 3 days of usage, so an hour-old one is still accurate
+    ttl: ${INSIGHT_CACHE_TTL:1h}
 
 
 usage:
