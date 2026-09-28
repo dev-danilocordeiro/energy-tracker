@@ -77,6 +77,27 @@ resilience4j:
       insightServiceCircuitBreaker:
         timeoutDuration: 120s
 
+# Token buckets per client (JWT subject), shared by every gateway instance through Redis.
+# Burst up to `capacity`, then `refill-tokens` per `refill-period`.
+rate-limit:
+  enabled: ${RATE_LIMIT_ENABLED:true}
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    # Every limited request waits on Redis, so a slow Redis must fail fast (and fail open)
+    timeout: 200ms
+  policies:
+    # user, device, ingestion, usage: 50 req/s sustained per client, bursts of 100
+    default:
+      capacity: ${RATE_LIMIT_DEFAULT_CAPACITY:100}
+      refill-tokens: ${RATE_LIMIT_DEFAULT_REFILL:50}
+      refill-period: 1s
+    # Each miss is an Ollama call that takes seconds: 10 per minute per client
+    insight:
+      capacity: ${RATE_LIMIT_INSIGHT_CAPACITY:10}
+      refill-tokens: ${RATE_LIMIT_INSIGHT_REFILL:10}
+      refill-period: 1m
+
 keycloak:
   auth:
     jwk-set-uri: http://localhost:8091/realms/het-security-realm/protocol/openid-connect/certs

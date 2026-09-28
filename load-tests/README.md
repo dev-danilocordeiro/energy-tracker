@@ -18,6 +18,13 @@ VUS=50 HOLD=10m load-tests/run.sh load   # knobs are environment variables
 load-tests/run.sh load --vus 5           # extra args go to `k6 run`
 ```
 
+The gateway rate-limits each client: 50 req/s sustained with bursts of 100, and
+10/min on insight. Every VU shares one token, so k6 is one client. `load` stays well
+under the limit, but `stress` and `spike` will get 429s. That is the limiter working,
+and the "Requests / s by status" panel shows it. To push the services themselves past
+that point, start the gateway with `RATE_LIMIT_ENABLED=false` or with higher
+`RATE_LIMIT_DEFAULT_CAPACITY` / `RATE_LIMIT_DEFAULT_REFILL`.
+
 For a clean baseline, start ingestion-service with `SIMULATION_ENABLED=false`. Its
 simulator otherwise posts ~200 readings/s straight to the service, and that traffic
 shows up in every service-side number.

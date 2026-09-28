@@ -149,6 +149,20 @@ load-tests/run.sh smoke               # k6 load test (smoke, load, stress, spike
   each service's docs at `/aggregate/<service>-service/v3/api-docs` (a
   `<service>ServiceApiDocsRoute` bean plus an entry in `springdoc.swagger-ui.urls`).
   Those paths are listed in `security.excluded.urls`.
+- Rate limiting: every service route has `.filter(rateLimiting.policy("<name>"))`
+  before its circuit breaker, so 429s never count as service failures. Policies live
+  under `rate-limit.policies` (`default`: burst 100, 50/s; `insight`: 10/min), keyed
+  by the JWT subject, in Redis (`rate-limit:<policy>:<fingerprint>:<sub>`) so every
+  instance shares them. A new route needs the filter and a policy.
+- The limiter is our own (`ratelimit/`), on Bucket4j, not the gateway's
+  `Bucket4jFilterFunctions`. That one fails every request when Redis is down, and
+  sends 429 with no body and no `Retry-After`. Ours fails open (logs one WARN per 30s,
+  metric `result=error`), connects lazily so the gateway starts without Redis, answers
+  429 as `ProblemDetail` with `Retry-After`, and puts the policy's settings in the key
+  so changed limits apply at once. Bucket4j stays on 8.15.0, the version Spring Cloud
+  Gateway declares.
+- Limit headers are written to the servlet response before the route runs, not to
+  the `ServerResponse`: locally built responses (the fallbacks) have read-only headers.
 - Don't name the filter chain bean `springSecurityFilterChain`: that name makes
   Boot skip `@EnableWebSecurity`, and startup fails with no `HttpSecurity` bean.
 
